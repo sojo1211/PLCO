@@ -275,10 +275,14 @@ def youtube_search():
 
 def get_yolo_db():
     """YOLO 분석 데이터베이스 연결"""
-    # kleague.db는 플코 폴더에 있음
-    yolo_db_path = Path(__file__).resolve().parent.parent / "kleague.db"
+    # 1. api_server.py와 같은 폴더의 kleague.db 확인 (Render & 로컬 복사본 대응)
+    yolo_db_path = Path(__file__).resolve().parent / "kleague.db"
 
-    # 경로가 없으면 상위 폴더 확인
+    # 2. 상위 폴더의 kleague.db 확인
+    if not yolo_db_path.exists():
+        yolo_db_path = Path(__file__).resolve().parent.parent / "kleague.db"
+
+    # 3. 절대 경로 확인 (로컬 플코 폴더 대응)
     if not yolo_db_path.exists():
         yolo_db_path = Path("c:/Users/sungj/OneDrive/Desktop/플코/kleague.db")
 
