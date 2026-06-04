@@ -1703,3 +1703,41 @@ body {
     margin-top: 4px;
   }
 }
+
+/* ── 다크 모드 (대시보드 전용 배경색 자연스럽게 연결) ── */
+.app.dark-mode {
+  background: #090d16;
+  min-height: 100vh;
+}
+.app.dark-mode .header {
+  background: #090d16;
+  border-bottom: 1px solid #1e293b;
+}
+.app.dark-mode .logo-text h1 { color: #f1f5f9; }
+.app.dark-mode .logo-text p { color: #64748b; }
+.app.dark-mode .nav-btn { color: #f1f5f9; }
+.app.dark-mode .main {
+  max-width: 1400px; /* 더 넓게 꽉 차게 */
+  padding: 16px;
+}
+
+/* ── MatchDetail 컴포넌트 추가 반응형 ── */
+@media (max-width: 768px) {
+  .match-center-grid { grid-template-columns: 1fr !important; }
+  .formation-pitch-layout { flex-direction: column !important; }
+  .formation-pitch-layout > div { width: 100% !important; min-width: 100% !important; }
+  
+  .scoreboard-banner {
+    flex-direction: column;
+    padding: 16px 10px !important;
+  }
+  .scoreboard-banner > div {
+    min-width: 100% !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+  .sb-goals.sb-home, .sb-goals.sb-away {
+    align-items: center !important;
+  }
+}

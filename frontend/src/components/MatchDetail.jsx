@@ -678,7 +678,7 @@ function AnalysisCards({ currentData, selectedOut, selectedIn, perspective, setP
   const animatedMatchRateThem = useAnimatedNumber(currentData.matchRateThem || 0)
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
       {/* 카드 1: 공간 창출 */}
       <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '14px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -835,7 +835,7 @@ function YoloProcessSection() {
         <span style={{ fontSize: '10px', fontWeight: 'bold', background: 'rgba(0,217,163,0.15)', color: '#00D9A3', padding: '2px 8px', borderRadius: '12px', border: '1px solid rgba(0,217,163,0.3)' }}>✅ YOLO 트래킹 검증</span>
       </div>
       <p style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.6', margin: '0 0 20px 0' }}>기존 1차 트래킹 데이터로만 파악이 불가했던 <strong style={{ color: '#94a3b8' }}>"교체 직후 아군 점유 공간 변화"</strong>를 YOLOv11 영상 분석 파이프라인을 구축해 22명 선수 위치 일치 데이터를 트래킹·정량화하여 전술 변화를 규명했습니다.</p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '24px' }}>
         {[
           { dot: '#ef4444', title: '실시간 객체 트래킹 HUD 및 전술 시각화', src: base + 'artifacts/tactical_analysis_dashboard.png', alt: 'YOLO HUD Dashboard', desc: 'YOLOv11 모델로 프레임당 22명의 선수 위치, 심판, 축구공의 바운딩 박스를 검출하고, 전용 HUD 가이드 라인을 캔버스 오버레이로 출력한 결과입니다.' },
           { dot: '#3b82f6', title: '호모그래피 평면 투영 히트맵', src: base + 'artifacts/tactical_heatmap.png', alt: 'Homography Heatmap', desc: 'Homography Matrix를 이용해 2차원 Top-down 뷰에 맞게 좌표를 보정한 결과입니다.' },
@@ -940,7 +940,7 @@ function FormationPitch({ match, homeLineup, awayLineup, events, teamTactics, pa
   const awayTac = getTacType(match.away_team)
 
   return (
-    <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+    <div className="formation-pitch-container" style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', overflowX: 'auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <TeamLogo src={match.home_logo} alt={match.home_team} size={28} />
@@ -953,7 +953,7 @@ function FormationPitch({ match, homeLineup, awayLineup, events, teamTactics, pa
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '14px', alignItems: 'stretch' }}>
+      <div className="formation-pitch-layout" style={{ display: 'flex', gap: '14px', alignItems: 'stretch', flexWrap: 'wrap' }}>
         <SubList players={homeSubs} side="left" />
         <div style={{ flex: 1, position: 'relative', paddingBottom: '55%', background: 'linear-gradient(180deg,#15803d,#166534)', borderRadius: '12px', border: '2px solid #1e293b', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
@@ -1116,7 +1116,7 @@ export default function YoloTacticalReport({ match, onBack }) {
         <div style={{ background: '#ffffff', borderRadius: '16px', padding: '28px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)', color: '#1e293b' }}>
           <div style={{ background: '#1e293b', color: '#ffffff', padding: '20px 24px', borderRadius: '12px', marginBottom: '32px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', justifyContent: 'center', textAlign: 'center' }}>
                 <TeamLogo src={match?.home_logo} alt={match?.home_team} size={36} />
                 <div>
                   <div style={{ fontSize: '10px', fontWeight: 'bold', color: '#00D9A3', letterSpacing: '1px', textTransform: 'uppercase' }}>Interactive Simulator</div>
@@ -1167,7 +1167,8 @@ export default function YoloTacticalReport({ match, onBack }) {
 
       {/* ── 매치 센터 섹션 (2번 기능 완전 이식) ── */}
       {activeSection === 'match_center' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start' }}>
+        <div className="match-center-layout" style={{ display: 'flex', flexDirection: 'column', gap: '24px', alignItems: 'stretch' }}>
+          <div className="match-center-grid" style={{ display: 'grid', gap: '24px', alignItems: 'start' }}>
 
           {/* 비디오 재생 패널 */}
           <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '20px' }}>
@@ -1204,6 +1205,7 @@ export default function YoloTacticalReport({ match, onBack }) {
               <button onClick={loadVideo} style={{ padding: '8px 16px', background: '#00D9A3', border: 'none', borderRadius: '6px', color: '#0f172a', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>재생</button>
             </div>
           </div>
+        </div>
 
           {/* 서브 분석 데이터 탭 패널 */}
           <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '20px' }}>
