@@ -1,0 +1,1812 @@
+commit 49ab1da9e41505d1608e5719a883eae231482316
+Author: ohsungjun <sungjun12110@gmail.com>
+Date:   Wed Jun 3 23:29:36 2026 +0900
+
+    feat: 배포 준비 – API URL 환경변수화 및 Flask HUD 서버 추가
+
+diff --git a/match_intelligence/frontend/src/components/MatchDetail.jsx b/match_intelligence/frontend/src/components/MatchDetail.jsx
+new file mode 100644
+index 0000000..a1ba04a
+--- /dev/null
++++ b/match_intelligence/frontend/src/components/MatchDetail.jsx
+@@ -0,0 +1,1800 @@
++import { useState, useEffect } from 'react'
++import axios from 'axios'
++
++const EVENT_ICON = {
++  GOAL: '??, CARD: '?', SUBST: '?', VAR: '?',
++}
++
++function getEventDescription(event) {
++  const { event_type, detail_kr, player_name, team_name, assist_name } = event
++
++  switch(event_type) {
++    case 'GOAL':
++      if (detail_kr?.includes('?살')) {
++        return `??!! ?게 무슨 ?인가?? ${team_name}??${player_name} ?수??뼈아???살골이 기록?고 맙니?? 경기??분위기? 급격?게 ?어붙습?다.`;
++      }
++      return `?!!! 골망???듭?다! ?어갔습?다! ${team_name}??${player_name}! ?상?인 ?결정?을 보여주네??${assist_name ? ` ?카로운 ????찔러준 ${assist_name} ?수???시?트??명품?었?니??` : ''}`;
++
++    case 'CARD':
++      const isRed = detail_kr?.includes('?장') || detail_kr?.includes('?드')
++      if (isRed) {
++        return `?드카드 발동!!!! ?판??지??이 ?장??명령?니?? ${team_name}??${player_name} ?수가 ?장?하면서 경기???도가 ?동치기 ?작?니??`;
++      }
++      return `경고 ?적??주의?야 ?니?? 주심??${team_name}??${player_name} ?수?게 ?로?카?? 부?합?다. 거친 ?클?었?요.`;
++
++    case 'SUBST':
++      if (detail_kr && detail_kr.includes('OUT') && detail_kr.includes('IN')) {
++        return `감독???술??중???변?? 줍니?? ${team_name}?서 ${detail_kr}??진행?니?? 그라?드???로???력??공급?니??`;
++      }
++      if (player_name && assist_name) {
++        return `교체 ?웃/?? ${team_name}??${player_name} ?수가 ?웃?고, ${assist_name} ?수가 그라?드??어 ?어갑니??`;
++      }
++      return `교체 카드 ?입! ${team_name}??가) ?수 교체(${player_name || '?수'})??행?며 ?로???름??꾀?니??`;
++
++    case 'SHOT':
++      return `과감?게 ?려봅니?? ${team_name}??${player_name}! ?주 ?카로운 ?팅?었?나 골키???면 ?? ?슬?슬?게 골문??비껴갑니??`;
++
++    case 'CORNER':
++      return `코너???트?스 기회?맞이?니?? ${team_name}! 공중?경합 ?황?서 ???장??가??수?이 ?방?로 ???동?니??`;
++
++    default:
++      return `박진??치??경기 진행 ? ${team_name} - ${detail_kr || event_type}`;
++  }
++}
++
++function getYoutubeId(url) {
++  const patterns = [
++    /youtu\.be\/([^?&]+)/,
++    /youtube\.com\/watch\?v=([^?&]+)/,
++    /youtube\.com\/embed\/([^?&]+)/,
++  ]
++  for (const p of patterns) {
++    const m = url.match(p)
++    if (m) return m[1]
++  }
++  if (/^[a-zA-Z0-9_-]{11}$/.test(url.trim())) return url.trim()
++  return null
++}
++
++export default function MatchDetail({ match, onBack }) {
++  const [events, setEvents] = useState([])
++  const [stats, setStats] = useState([])
++  const [parameters, setParameters] = useState([])
++  const [commentary, setCommentary] = useState('')
++  const [loadingCommentary, setLoadingCommentary] = useState(false)
++  const [activeTab, setActiveTab] = useState('commentary')
++  const [videoInput, setVideoInput] = useState('')
++  const [videoId, setVideoId] = useState('lcod56QPJVI')
++  const [videoResults, setVideoResults] = useState([])
++  const [videoLoading, setVideoLoading] = useState(false)
++  const [lineups, setLineups] = useState([])
++  const [teamTactics, setTeamTactics] = useState({})
++  const [comparisonData, setComparisonData] = useState(null)
++
++  const fid = match.fixture_id
++
++  useEffect(() => {
++    axios.get(`${import.meta.env.VITE_API_URL}/api/fixtures/${fid}/events`)
++      .then(r => {
++        const mapped = (r.data || []).map(e => ({
++          ...e,
++          event_type: e.event_type?.toUpperCase()
++        }))
++        setEvents(mapped)
++      })
++      .catch(() => {})
++
++    axios.get(`${import.meta.env.VITE_API_URL}/api/fixtures/${fid}/player_stats`)
++      .then(r => setStats(r.data))
++      .catch(() => {})
++
++    // YouTube ?동 검??    setVideoLoading(true)
++    axios.get(`${import.meta.env.VITE_API_URL}/api/youtube/search`, {
++      params: { home: match.home_team, away: match.away_team, date: match.date }
++    })
++      .then(r => {
++        setVideoResults(r.data.results || [])
++        if (r.data.video_id) setVideoId(r.data.video_id)
++        // YouTube URL???으???창에???동?로 ?기
++        if (r.data.youtube_url) {
++          window.open(r.data.youtube_url, 'youtube_' + match.fixture_id, 'width=1200,height=700')
++        }
++      })
++      .catch(() => {})
++      .finally(() => setVideoLoading(false))
++
++    // ?인??로드
++    axios.get(`${import.meta.env.VITE_API_URL}/api/fixtures/${fid}/lineups`)
++      .then(r => setLineups(r.data || []))
++      .catch(() => {})
++
++    // ?라미터 로드
++    axios.get(`${import.meta.env.VITE_API_URL}/api/fixtures/${fid}/parameters`)
++      .then(r => setParameters(r.data || []))
++      .catch(() => {})
++
++    // YOLO 검?비교 ?이??로드
++    axios.get(`${import.meta.env.VITE_API_URL}/api/yolo/match/${fid}/comparison`)
++      .then(r => setComparisonData(r.data))
++      .catch(() => {})
++  }, [fid])
++
++  // AI 중계 ???택 ???동 ?성
++  useEffect(() => {
++    if (activeTab === 'commentary' && !commentary && !loadingCommentary) {
++      generateCommentary()
++    }
++  }, [activeTab])
++
++  const generateCommentary = () => {
++    setLoadingCommentary(true)
++    setCommentary('')
++    axios.get(`${import.meta.env.VITE_API_URL}/api/matches/${fid}/commentary`, {
++      params: { home: match.home_team, away: match.away_team }
++    })
++      .then(r => setCommentary(r.data.commentary))
++      .catch(() => setCommentary('중계 ?성 ?패'))
++      .finally(() => setLoadingCommentary(false))
++  }
++
++  const loadVideo = () => {
++    const id = getYoutubeId(videoInput)
++    if (id) setVideoId(id)
++    else alert('?효??YouTube URL ?는 ?상 ID??력?주?요')
++  }
++
++  const searchYoutube = () => {
++    const q = encodeURIComponent(`${match.home_team} vs ${match.away_team} ${match.date} K리그`)
++    window.open(`https://www.youtube.com/results?search_query=${q}`, '_blank')
++  }
++
++  const homeStats = stats.filter(s => s.team_name === match.home_team)
++  const awayStats = stats.filter(s => s.team_name === match.away_team)
++  const statKeys = [...new Set(stats.map(s => s.stat_key))]
++  const paramsByTeam = parameters.reduce((acc, p) => {
++    acc[p.team_name] = p
++    return acc
++  }, {})
++
++  return (
++    <div className="match-detail">
++      <button className="back-btn" onClick={onBack}>??경기 목록</button>
++
++      {/* K리그 방송 ?????코?보??*/}
++      {(() => {
++        const homeGoals = events.filter(e => e.event_type === 'GOAL' && e.team_name === match.home_team && !e.detail_kr?.includes('?살?))
++        const awayGoals = events.filter(e => e.event_type === 'GOAL' && e.team_name === match.away_team && !e.detail_kr?.includes('?살?))
++        return (
++          <div className="broadcast-scoreboard">
++            {/* ?? ?점 목록 */}
++            <div className="bsc-goals bsc-goals-home">
++              {[...homeGoals].reverse().map((g, i) => (
++                <div key={i} className="bsc-goal-row">
++                  <span className="bsc-goal-min">{g.minute}{g.extra_time ? `+${g.extra_time}` : ''}'</span>
++                  <span className="bsc-goal-name">{g.player_name?.split(' ').slice(-1)[0] || g.player_name}</span>
++                </div>
++              ))}
++            </div>
++            {/* ?? */}
++            <div className="bsc-team bsc-team-home">
++              <img className="bsc-logo" src={match.home_logo} alt={match.home_team} onError={e => e.target.style.display='none'} />
++              <span className="bsc-team-name">{match.home_team}</span>
++            </div>
++            {/* ?코??*/}
++            <div className="bsc-center">
++              <div className="bsc-score">
++                <span>{match.home_score ?? 0}</span>
++                <span className="bsc-score-sep">:</span>
++                <span>{match.away_score ?? 0}</span>
++              </div>
++              <div className="bsc-date">
++                {match.date} ·
++                {match.status === 'Live' ? '? LIVE' : match.status === 'Ended' ? '??경기 종료' : match.status}
++              </div>
++            </div>
++            {/* ?정? */}
++            <div className="bsc-team bsc-team-away">
++              <span className="bsc-team-name">{match.away_team}</span>
++              <img className="bsc-logo" src={match.away_logo} alt={match.away_team} onError={e => e.target.style.display='none'} />
++            </div>
++            {/* ?정? ?점 목록 */}
++            <div className="bsc-goals bsc-goals-away">
++              {[...awayGoals].reverse().map((g, i) => (
++                <div key={i} className="bsc-goal-row bsc-goal-row-away">
++                  <span className="bsc-goal-name">{g.player_name?.split(' ').slice(-1)[0] || g.player_name}</span>
++                  <span className="bsc-goal-min">{g.minute}{g.extra_time ? `+${g.extra_time}` : ''}'</span>
++                </div>
++              ))}
++            </div>
++          </div>
++        )
++      })()}
++
++      {/* ?상 + 분석 분할 ?이?웃 */}
++      <div className="split-layout">
++
++        {/* ?쪽: ?상 ?널 */}
++        <div className="video-panel">
++          <div className="video-panel-header">
++            <span className="video-panel-title">? 경기 ?상</span>
++            <button className="yt-search-btn" onClick={searchYoutube}>
++              YouTube 검????            </button>
++          </div>
++
++          {videoLoading && (
++            <div className="video-placeholder">
++              <div className="spinner" style={{ borderTopColor: '#ff0000' }} />
++              <p style={{ color: '#9ca3af', marginTop: 12 }}>경기 ?상 검???..</p>
++            </div>
++          )}
++
++          {!videoLoading && videoId && (
++            <div className="video-wrap">
++              <iframe
++                src={`https://www.youtube.com/embed/${videoId}`}
++                title="match video"
++                style={{ border: 'none' }}
++                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
++                allowFullScreen
++              />
++            </div>
++          )}
++
++          {!videoLoading && !videoId && (
++            <div className="video-placeholder">
++              <div className="video-placeholder-icon">??/div>
++              <p>?상??찾? 못했?니??/p>
++              <button className="yt-search-btn large" onClick={searchYoutube}>
++                ? YouTube?서 직접 검??              </button>
++            </div>
++          )}
++
++          {/* 검??결과 ?네??목록 */}
++          {videoResults.length > 0 && (
++            <div className="video-results">
++              {videoResults.map(v => (
++                <div
++                  key={v.video_id}
++                  className={`video-result-item ${videoId === v.video_id ? 'active' : ''}`}
++                  onClick={() => setVideoId(v.video_id)}
++                >
++                  <img src={v.thumbnail} alt={v.title} />
++                  <div className="video-result-info">
++                    <p>{v.title}</p>
++                    <span>{v.channel}</span>
++                  </div>
++                </div>
++              ))}
++            </div>
++          )}
++
++          <div className="video-input-row">
++            <input
++              className="video-url-input"
++              placeholder="YouTube URL ?는 ?상 ID 붙여?기..."
++              value={videoInput}
++              onChange={e => setVideoInput(e.target.value)}
++              onKeyDown={e => e.key === 'Enter' && loadVideo()}
++            />
++            <button className="video-load-btn" onClick={loadVideo}>?생</button>
++          </div>
++        </div>
++
++        {/* ?른? 분석 ?널 */}
++        <div className="analysis-panel">
++          <div className="tabs">
++            {['commentary', 'timeline', 'lineups', 'stats', 'parameters', 'yolo_val'].map(tab => (
++              <button
++                key={tab}
++                className={`tab ${activeTab === tab ? 'active' : ''}`}
++                onClick={() => setActiveTab(tab)}
++              >
++                {{ commentary: 'AI 중계', timeline: '??라??, lineups: '?수', stats: '?계', parameters: '?라미터', yolo_val: 'YOLO 검? }[tab]}
++              </button>
++            ))}
++          </div>
++
++          {/* AI 중계 - Gemini ?성 ?연?러??중계 */}
++          {activeTab === 'commentary' && (
++            <div className="commentary-section">
++              {/* ?시?중계 링크 - ?이브일 ?만 ?시 */}
++              {match.status === 'Live' && (
++                <div className="live-broadcast-bar">
++                  <span className="live-badge">? LIVE</span>
++                  <span className="live-text">지?경기 ?- ?시?중계</span>
++                  <div className="broadcast-links">
++                    <button className="broadcast-btn spotv" onClick={() => window.open(`https://www.spotv.co.kr/schedule?date=${match.date}`, '_blank')}>SPOTV</button>
++                    <button className="broadcast-btn naver" onClick={() => window.open(`https://sports.naver.com/football/schedule`, '_blank')}>?이?/button>
++                    <button className="broadcast-btn kleague" onClick={() => window.open('https://www.kleague.com', '_blank')}>K리그 공식</button>
++                  </div>
++                </div>
++              )}
++
++              {/* 경기 종료 ?태 ?시 */}
++              {match.status === 'Ended' && (
++                <div className="match-ended-bar" style={{marginBottom: '16px'}}>
++                  <span className="ended-badge">??경기 종료</span>
++                  <span className="ended-text">경기 ?작부??종료까? ?시?중계?드</span>
++                </div>
++              )}
++
++              <div className="commentary-timeline" style={{background: '#ffffff', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0'}}>
++                <div className="timeline-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '12px', borderBottom: '2px solid #e2e8f0'}}>
++                  <span className="timeline-title" style={{fontSize: '16px', fontWeight: 'bold', color: '#1e293b'}}>??AI ?시?경기 ?설 ?드</span>
++                  <span className="total-events" style={{fontSize: '13px', color: '#64748b', background: '#f1f5f9', padding: '4px 12px', borderRadius: '20px', fontWeight: 'bold'}}>
++                    {events.filter(e => ['GOAL', 'CARD', 'SHOT', 'CORNER', 'SUBST'].includes(e.event_type)).length}??벤??                  </span>
++                </div>
++
++                {(() => {
++                  const timelineFiltered = events.filter(e => {
++                    const type = e.event_type;
++                    return type === 'GOAL' || type === 'CARD' || type === 'SHOT' || type === 'CORNER' || type === 'SUBST';
++                  }).sort((a, b) => (a.minute || 0) - (b.minute || 0)).reduce((acc, e) => {
++                    const key = `${e.minute}-${e.extra_time}-${e.team_name}-${e.event_type}`;
++                    if (!acc.keys?.has(key)) {
++                      acc.keys = acc.keys || new Set();
++                      acc.keys.add(key);
++                      acc.result.push(e);
++                    }
++                    return acc;
++                  }, {keys: new Set(), result: []}).result;
++
++                  const firstHalf = timelineFiltered.filter(e => e.minute <= 45 && !e.extra_time);
++                  const firstHalfExtra = timelineFiltered.filter(e => e.minute === 45 && e.extra_time > 0);
++                  const secondHalf = timelineFiltered.filter(e => e.minute > 45 && e.minute <= 90 && !e.extra_time);
++                  const secondHalfExtra = timelineFiltered.filter(e => e.minute === 90 && e.extra_time > 0);
++
++                  const renderTimelineCard = (e, i) => {
++                    const min = `${e.minute}'${e.extra_time ? `+${e.extra_time}` : ''}`;
++                    let emoji = '??;
++                    let color = '#94a3b8';
++                    let bgColor = '#f8fafc';
++
++                    if (e.event_type === 'GOAL') {
++                      emoji = '??;
++                      color = '#ef4444';
++                      bgColor = '#fee2e2';
++                    } else if (e.event_type === 'CARD') {
++                      const isRed = e.detail_kr?.includes('?드') || e.detail_kr?.includes('?장');
++                      emoji = isRed ? '?' : '?';
++                      color = isRed ? '#ef4444' : '#eab308';
++                      bgColor = isRed ? '#fee2e2' : '#fef9c3';
++                    } else if (e.event_type === 'SHOT') {
++                      emoji = '?';
++                      color = '#3b82f6';
++                      bgColor = '#eff6ff';
++                    } else if (e.event_type === 'CORNER') {
++                      emoji = '?';
++                      color = '#8b5cf6';
++                      bgColor = '#f5f3ff';
++                    } else if (e.event_type === 'SUBST') {
++                      emoji = '?';
++                      color = '#10b981';
++                      bgColor = '#ecfdf5';
++                    }
++
++                    return (
++                      <div key={i} style={{
++                        display: 'flex',
++                        gap: '12px',
++                        padding: '12px',
++                        marginBottom: '8px',
++                        background: bgColor,
++                        borderLeft: `4px solid ${color}`,
++                        borderRadius: '8px',
++                        alignItems: 'flex-start',
++                        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
++                      }}>
++                        <div style={{fontSize: '18px', minWidth: '30px', textAlign: 'center'}}>{emoji}</div>
++                        <div style={{flex: 1, fontSize: '13px'}}>
++                          <div style={{fontWeight: 'bold', color: '#1e293b', marginBottom: '4px'}}>
++                            <span style={{color: color}}>{min}</span>
++                            {' '}
++                            <span style={{background: color, color: 'white', padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: 'bold'}}>
++                              {e.team_name}
++                            </span>
++                          </div>
++                          <div style={{color: '#475569', lineHeight: '1.5', fontWeight: '500'}}>
++                            {getEventDescription(e)}
++                          </div>
++                        </div>
++                      </div>
++                    );
++                  };
++
++                  return (
++                    <div className="timeline-events-container">
++                      {/* 경기 ?작 ?오??*/}
++                      <div className="timeline-header-card" style={{background: '#f1f5f9', border: '1px solid #cbd5e1', padding: '14px 16px', borderRadius: '8px', marginBottom: '20px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', color: '#334155'}}>
++                        <span style={{fontSize: '18px'}}>?</span>
++                        <span style={{fontSize: '13px'}}>0' - 경기 ?작! Parc des Princes 경기?에???판???슬??께 ?오?됩?다!</span>
++                      </div>
++
++                      {/* ?반??*/}
++                      <div style={{marginBottom: '24px'}}>
++                        <div style={{fontSize: '14px', fontWeight: 'bold', color: '#10b981', borderBottom: '2px solid #10b981', paddingBottom: '6px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px'}}>
++                          <span>?️ ?반??/span>
++                          <span style={{fontSize: '12px', color: '#64748b', fontWeight: 'normal'}}>(1?~ 45?</span>
++                        </div>
++                        {firstHalf.length > 0 ? firstHalf.map((e, idx) => renderTimelineCard(e, idx)) : <div style={{color: '#94a3b8', padding: '8px 12px', fontSize: '13px'}}>?점 ??별???벤?? ?었?니??</div>}
++                      </div>
++
++                      {/* ?반??추??간 */}
++                      {firstHalfExtra.length > 0 && (
++                        <div style={{marginBottom: '24px'}}>
++                          <div style={{fontSize: '14px', fontWeight: 'bold', color: '#eab308', borderBottom: '2px solid #eab308', paddingBottom: '6px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px'}}>
++                            <span>?️ ?반??추??간</span>
++                          </div>
++                          {firstHalfExtra.map((e, idx) => renderTimelineCard(e, idx))}
++                        </div>
++                      )}
++
++                      {/* ?반??*/}
++                      <div style={{marginBottom: '24px'}}>
++                        <div style={{fontSize: '14px', fontWeight: 'bold', color: '#3b82f6', borderBottom: '2px solid #3b82f6', paddingBottom: '6px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px'}}>
++                          <span>?️ ?반??/span>
++                          <span style={{fontSize: '12px', color: '#64748b', fontWeight: 'normal'}}>(46?~ 90?</span>
++                        </div>
++                        {secondHalf.length > 0 ? secondHalf.map((e, idx) => renderTimelineCard(e, idx)) : <div style={{color: '#94a3b8', padding: '8px 12px', fontSize: '13px'}}>?점 ??별???벤?? ?었?니??</div>}
++                      </div>
++
++                      {/* ?반??추??간 */}
++                      {secondHalfExtra.length > 0 && (
++                        <div style={{marginBottom: '24px'}}>
++                          <div style={{fontSize: '14px', fontWeight: 'bold', color: '#eab308', borderBottom: '2px solid #eab308', paddingBottom: '6px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px'}}>
++                            <span>?️ ?반??추??간</span>
++                          </div>
++                          {secondHalfExtra.map((e, idx) => renderTimelineCard(e, idx))}
++                        </div>
++                      )}
++
++                      {/* 경기 종료 & 최종 결과 */}
++                      <div className="timeline-footer-card" style={{background: '#fee2e2', border: '1px solid #fca5a5', padding: '16px', borderRadius: '12px', marginTop: '28px', fontWeight: 'bold', display: 'flex', flexDirection: 'column', gap: '6px', color: '#991b1b', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)'}}>
++                        <div style={{fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px'}}>
++                          <span style={{fontSize: '20px'}}>?</span>
++                          <span>90' - 경기 ?? 최종 ?코??{match.home_team} {match.home_score} : {match.away_score} {match.away_team}</span>
++                        </div>
++                        <div style={{fontSize: '13px', fontWeight: 'normal', color: '#7f1d1d', marginTop: '4px', lineHeight: '1.5'}}>
++                          {match.away_score > match.home_score 
++                            ? `AS 모나?AS_Monaco)가 ?리 ?제르맹(PSG)?????${match.away_score} ? ${match.home_score}??리?거두?경기가 종료?었?니??` 
++                            : match.home_score > match.away_score 
++                              ? `?리 ?제르맹(PSG)??AS 모나?AS_Monaco)????${match.home_score} ? ${match.away_score}??리?거두?경기가 종료?었?니??` 
++                              : `??? 치열???전 ?에 ${match.home_score} ? ${match.away_score} 무승부?경기가 종료?었?니??`}
++                        </div>
++                      </div>
++                    </div>
++                  );
++                })()}
++              </div>
++
++              {events.length === 0 && (
++                <div className="commentary-prompt">
++                  <div style={{fontSize: '48px', marginBottom: '12px'}}>??/div>
++                  <p>경기 ?벤?? ?습?다</p>
++                </div>
++              )}
++            </div>
++          )}
++
++          {/* ??라??*/}
++          {activeTab === 'timeline' && (
++            <div className="timeline-section" style={{position: 'relative', padding: '24px 16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', minHeight: '400px'}}>
++              {/* 중앙 ?로??*/}
++              <div style={{position: 'absolute', left: '50%', top: 0, bottom: 0, width: '4px', background: 'linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%)', transform: 'translateX(-50%)', borderRadius: '2px'}} />
++
++              <div style={{position: 'relative'}}>
++                {/* 경기 ?작 ?오??중앙 카드 */}
++                <div style={{display: 'flex', justifyContent: 'center', marginBottom: '32px', position: 'relative', zIndex: 12}}>
++                  <div style={{
++                    background: '#f1f5f9',
++                    border: '1px solid #cbd5e1',
++                    borderRadius: '24px',
++                    padding: '8px 24px',
++                    fontWeight: 'bold',
++                    color: '#334155',
++                    fontSize: '13px',
++                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
++                    textAlign: 'center',
++                    display: 'flex',
++                    alignItems: 'center',
++                    gap: '8px'
++                  }}>
++                    <span style={{fontSize: '16px'}}>?</span>
++                    <span>0' - 경기 ?작! Parc des Princes 경기?에???오???슬???립?다!</span>
++                  </div>
++                </div>
++
++                {events.filter(e => {
++                  const type = e.event_type;
++                  return type === 'GOAL' || type === 'CARD' || type === 'SHOT' || type === 'CORNER' || type === 'SUBST';
++                }).sort((a, b) => (a.minute || 0) - (b.minute || 0)).reduce((acc, e) => {
++                  const key = `${e.minute}-${e.extra_time}-${e.team_name}-${e.event_type}`;
++                  if (!acc.keys?.has(key)) {
++                    acc.keys = acc.keys || new Set();
++                    acc.keys.add(key);
++                    acc.result.push(e);
++                  }
++                  return acc;
++                }, {keys: new Set(), result: []}).result.map((e, i) => {
++                  const min = e.minute || 0;
++                  // ??(PSG)? ?쪽(isLeft = true), ?정?(Monaco)? ?른?isLeft = false)
++                  const isLeft = e.team_name === match.home_team;
++                  
++                  let color = '#94a3b8';
++                  let bgColor = '#f1f5f9';
++                  let icon = '??;
++
++                  if (e.event_type === 'GOAL') {
++                    bgColor = '#fef3c7';
++                    color = '#d97706';
++                    icon = '??;
++                  } else if (e.event_type === 'CARD') {
++                    const isRed = e.detail_kr?.includes('?드');
++                    bgColor = isRed ? '#fee2e2' : '#fef9c3';
++                    color = isRed ? '#ef4444' : '#eab308';
++                    icon = isRed ? '?' : '?';
++                  } else if (e.event_type === 'SHOT') {
++                    bgColor = '#e0f2fe';
++                    color = '#0284c7';
++                    icon = '?';
++                  } else if (e.event_type === 'CORNER') {
++                    bgColor = '#f3e8ff';
++                    color = '#7c3aed';
++                    icon = '?';
++                  } else if (e.event_type === 'SUBST') {
++                    bgColor = '#dcfce7';
++                    color = '#16a34a';
++                    icon = '?';
++                  }
++
++                  return (
++                    <div key={i} style={{display: 'flex', marginBottom: '24px', position: 'relative', alignItems: 'center'}}>
++                      {/* ?쪽 콘텐?공간 (??) */}
++                      <div style={{width: '46%', paddingRight: '20px', boxSizing: 'border-box', textAlign: 'right'}}>
++                        {isLeft && (
++                          <div style={{
++                            display: 'inline-block',
++                            background: '#ffffff',
++                            border: `1px solid ${color}`,
++                            borderLeft: `5px solid ${color}`,
++                            borderRadius: '12px',
++                            padding: '12px 16px',
++                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)',
++                            maxWidth: '100%',
++                            textAlign: 'left'
++                          }}>
++                            <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px'}}>
++                              <span style={{fontSize: '11px', fontWeight: 'bold', background: color, color: '#fff', padding: '2px 8px', borderRadius: '20px'}}>
++                                {e.team_name}
++                              </span>
++                              <span style={{fontSize: '12px', fontWeight: 'bold', color: '#1e293b'}}>{min}' ?/span>
++                            </div>
++                            <div style={{fontSize: '13px', color: '#334155', fontWeight: '500', lineHeight: '1.4'}}>
++                              {getEventDescription(e)}
++                            </div>
++                          </div>
++                        )}
++                      </div>
++
++                      {/* 중앙 ?건 ?간/?이?배? */}
++                      <div style={{width: '8%', display: 'flex', justifyContent: 'center', zIndex: 10}}>
++                        <div style={{
++                          width: '36px',
++                          height: '36px',
++                          borderRadius: '50%',
++                          background: bgColor,
++                          border: `2px solid ${color}`,
++                          color: color,
++                          display: 'flex',
++                          alignItems: 'center',
++                          justifyContent: 'center',
++                          fontSize: '16px',
++                          fontWeight: 'bold',
++                          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
++                        }}>
++                          {icon}
++                        </div>
++                      </div>
++
++                      {/* ?른?콘텐?공간 (?정?) */}
++                      <div style={{width: '46%', paddingLeft: '20px', boxSizing: 'border-box', textAlign: 'left'}}>
++                        {!isLeft && (
++                          <div style={{
++                            display: 'inline-block',
++                            background: '#ffffff',
++                            border: `1px solid ${color}`,
++                            borderLeft: `5px solid ${color}`,
++                            borderRadius: '12px',
++                            padding: '12px 16px',
++                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)',
++                            maxWidth: '100%'
++                          }}>
++                            <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px'}}>
++                              <span style={{fontSize: '11px', fontWeight: 'bold', background: color, color: '#fff', padding: '2px 8px', borderRadius: '20px'}}>
++                                {e.team_name}
++                              </span>
++                              <span style={{fontSize: '12px', fontWeight: 'bold', color: '#1e293b'}}>{min}' ?/span>
++                            </div>
++                            <div style={{fontSize: '13px', color: '#334155', fontWeight: '500', lineHeight: '1.4'}}>
++                              {getEventDescription(e)}
++                            </div>
++                          </div>
++                        )}
++                      </div>
++                    </div>
++                  );
++                })}
++
++                {/* 경기 종료 ?최종 결과 중앙 카드 */}
++                <div style={{display: 'flex', justifyContent: 'center', marginTop: '32px', position: 'relative', zIndex: 12}}>
++                  <div style={{
++                    background: '#fee2e2',
++                    border: '1px solid #fca5a5',
++                    borderRadius: '16px',
++                    padding: '12px 28px',
++                    fontWeight: 'bold',
++                    color: '#991b1b',
++                    fontSize: '13px',
++                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)',
++                    textAlign: 'center',
++                    maxWidth: '85%',
++                    display: 'flex',
++                    flexDirection: 'column',
++                    alignItems: 'center',
++                    gap: '4px'
++                  }}>
++                    <div style={{display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px'}}>
++                      <span style={{fontSize: '18px'}}>?</span>
++                      <span>90' - 경기 종료! 최종 ?코??{match.home_team} {match.home_score} : {match.away_score} {match.away_team}</span>
++                    </div>
++                    <div style={{fontWeight: 'normal', color: '#7f1d1d', marginTop: '2px', fontSize: '12px', lineHeight: '1.4'}}>
++                      {match.away_score > match.home_score 
++                        ? `AS 모나?AS_Monaco)가 ?리 ?제르맹(PSG)?????${match.away_score} ? ${match.home_score}??리?거두?경기가 종료?었?니??` 
++                        : match.home_score > match.away_score 
++                          ? `?리 ?제르맹(PSG)??AS 모나?AS_Monaco)????${match.home_score} ? ${match.away_score}??리?거두?경기가 종료?었?니??` 
++                          : `??? 치열???전 ?에 ${match.home_score} ? ${match.away_score} 무승부?경기가 종료?었?니??`}
++                    </div>
++                  </div>
++                </div>
++              </div>
++            </div>
++          )}
++
++          {/* ?벤??*/}
++          {activeTab === 'events' && (
++            <div className="events-list">
++              {events.length === 0 && <div className="state-msg">?벤???이???음</div>}
++              {events.map((e, i) => (
++                <div key={i} className={`event-item ${e.event_type}`}>
++                  <div className="event-min">{e.minute}{e.extra_time ? `+${e.extra_time}` : ''}'</div>
++                  <div className="event-icon">{EVENT_ICON[e.event_type] || '??}</div>
++                  <div className="event-info">
++                    <div className="event-detail">{e.detail_kr}</div>
++                    <div className="event-player">{e.player_name}</div>
++                    {e.assist_name && <div className="event-assist">?시?트: {e.assist_name}</div>}
++                  </div>
++                  <div className="event-team">{e.team_name}</div>
++                </div>
++              ))}
++            </div>
++          )}
++
++          {/* ?수 ?인??- K리그 공식 ????*/}
++          {activeTab === 'lineups' && (
++            <div className="lineups-section">
++              {lineups.length === 0 && (
++                <div className="state-msg">?수 ?이???음</div>
++              )}
++              {[match.home_team, match.away_team].map(teamName => {
++                const teamPlayers = lineups.filter(p => p.team_name === teamName)
++                const starting = teamPlayers.filter(p => p.status === 'Starting').sort((a, b) => (a.jersey_number || 0) - (b.jersey_number || 0))
++                const subs = teamPlayers.filter(p => p.status === 'Substitute').sort((a, b) => (a.jersey_number || 0) - (b.jersey_number || 0))
++
++                const posMap = { 'GK': '골키??, 'DF': '?비??, 'MF': '미드?더', 'FW': '공격?? }
++                const getPosKr = (pos) => {
++                  if (!pos) return '미정'
++                  const first = pos.charAt(0)
++                  return posMap[first] || pos
++                }
++
++                return (
++                  <div key={teamName} className="lineup-team-block">
++                    <div className="lineup-team-header">
++                      <span style={{fontSize: '20px', marginRight: '8px'}}>??/span>
++                      <span style={{fontWeight: 'bold', fontSize: '16px'}}>{teamName}</span>
++                      <span style={{fontSize: '12px', color: '#666', marginLeft: '8px'}}>?발 {starting.length}?/span>
++                    </div>
++
++                    <div className="lineup-section-label">?발 ?인??/div>
++                    <div className="lineup-grid official">
++                      {starting.map((p, i) => (
++                        <div key={i} className="player-card official-style">
++                          <div className="player-number-large">{p.jersey_number || '-'}</div>
++                          <div className="player-name-official">{p.player_name}</div>
++                          <div className="player-pos-kr">{getPosKr(p.position)}</div>
++                          {p.position && <div className="player-pos-code">{p.position}</div>}
++                        </div>
++                      ))}
++                    </div>
++
++                    {subs.length > 0 && (
++                      <>
++                        <div className="lineup-section-label sub">교체 ?수 ({subs.length}?</div>
++                        <div className="lineup-grid official sub-lineup">
++                          {subs.map((p, i) => (
++                            <div key={i} className="player-card official-style sub">
++                              <div className="player-number-large">{p.jersey_number || '-'}</div>
++                              <div className="player-name-official">{p.player_name}</div>
++                              <div className="player-pos-kr">{getPosKr(p.position)}</div>
++                              {p.position && <div className="player-pos-code">{p.position}</div>}
++                            </div>
++                          ))}
++                        </div>
++                      </>
++                    )}
++                  </div>
++                )
++              })}
++
++              <style>{`
++                .lineups-section .lineup-team-block {
++                  margin-bottom: 24px;
++                  padding: 16px;
++                  background: #f9f9f9;
++                  border-radius: 8px;
++                  border-left: 4px solid #00D9A3;
++                }
++
++                .lineups-section .lineup-team-header {
++                  display: flex;
++                  align-items: center;
++                  margin-bottom: 16px;
++                  padding-bottom: 8px;
++                  border-bottom: 2px solid #ddd;
++                }
++
++                .lineups-section .lineup-section-label {
++                  font-weight: bold;
++                  font-size: 13px;
++                  color: #333;
++                  margin-top: 12px;
++                  margin-bottom: 12px;
++                  text-transform: uppercase;
++                  letter-spacing: 0.5px;
++                }
++
++                .lineups-section .lineup-grid.official {
++                  display: grid;
++                  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
++                  gap: 8px;
++                  margin-bottom: 16px;
++                }
++
++                .lineups-section .lineup-grid.official.sub-lineup {
++                  opacity: 0.8;
++                  background: rgba(255,255,255,0.5);
++                  padding: 8px;
++                  border-radius: 4px;
++                }
++
++                .lineups-section .player-card.official-style {
++                  background: white;
++                  border: 1px solid #ddd;
++                  border-radius: 6px;
++                  padding: 8px;
++                  text-align: center;
++                  transition: all 0.2s;
++                  cursor: pointer;
++                }
++
++                .lineups-section .player-card.official-style:hover {
++                  border-color: #00D9A3;
++                  box-shadow: 0 2px 8px rgba(0,217,163,0.2);
++                  transform: translateY(-2px);
++                }
++
++                .lineups-section .player-card.official-style.sub {
++                  opacity: 0.7;
++                  background: #f5f5f5;
++                }
++
++                .lineups-section .player-number-large {
++                  font-weight: bold;
++                  font-size: 16px;
++                  color: #00D9A3;
++                  margin-bottom: 4px;
++                }
++
++                .lineups-section .player-name-official {
++                  font-weight: 500;
++                  font-size: 12px;
++                  color: #333;
++                  word-break: break-word;
++                  line-height: 1.3;
++                }
++
++                .lineups-section .player-pos-kr {
++                  font-size: 10px;
++                  color: #666;
++                  margin-top: 4px;
++                  font-weight: 500;
++                }
++
++                .lineups-section .player-pos-code {
++                  font-size: 9px;
++                  color: #999;
++                  margin-top: 2px;
++                  font-family: monospace;
++                }
++              `}</style>
++            </div>
++          )}
++
++          {/* ?계 */}
++          {activeTab === 'stats' && (
++            <div className="stats-table">
++              <div className="stats-header">
++                <span>{match.home_team}</span>
++                <span>??</span>
++                <span>{match.away_team}</span>
++              </div>
++              {statKeys.map(key => {
++                const h = homeStats.find(s => s.stat_key === key)?.value ?? '-'
++                const a = awayStats.find(s => s.stat_key === key)?.value ?? '-'
++                return (
++                  <div key={key} className="stat-row">
++                    <span className="stat-val">{h}</span>
++                    <span className="stat-key">{key}</span>
++                    <span className="stat-val">{a}</span>
++                  </div>
++                )
++              })}
++            </div>
++          )}
++
++          {/* ?라미터 */}
++          {activeTab === 'parameters' && (
++            <div className="params-section">
++              {parameters.length > 0 ? (
++                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
++                  {[match.home_team, match.away_team].map(team => {
++                    const p = paramsByTeam[team]
++                    if (!p) return null
++                    return (
++                      <div key={team} className="param-card">
++                        <h3>{team}</h3>
++                        <div style={{fontSize: '13px', lineHeight: '1.8'}}>
++                          <div style={{marginBottom: '8px'}}>
++                            <strong>?박 강도:</strong> {p.press_intensity?.toFixed(0) || '-'}%
++                          </div>
++                          <div style={{marginBottom: '8px'}}>
++                            <strong>?비 ?인:</strong> {p.defensive_line?.toFixed(0) || '-'}%
++                          </div>
++                          <div style={{marginBottom: '8px'}}>
++                            <strong>?트?스:</strong> {p.setpiece_focus?.toFixed(0) || '-'}%
++                          </div>
++                          <div style={{marginBottom: '8px'}}>
++                            <strong>?프?이??</strong> {p.offside_trap?.toFixed(0) || '-'}%
++                          </div>
++                          <hr style={{margin: '8px 0', border: 'none', borderTop: '1px solid #ddd'}} />
++                          <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
++                            <span style={{background: '#f0f0f0', padding: '4px 8px', borderRadius: '4px', fontSize: '12px'}}>
++                              ?울: {p.fouls || 0}
++                            </span>
++                            <span style={{background: '#f0f0f0', padding: '4px 8px', borderRadius: '4px', fontSize: '12px'}}>
++                              ?팅: {p.shots || 0}
++                            </span>
++                            <span style={{background: '#f0f0f0', padding: '4px 8px', borderRadius: '4px', fontSize: '12px'}}>
++                              코너: {p.corners || 0}
++                            </span>
++                          </div>
++                        </div>
++                      </div>
++                    )
++                  })}
++                </div>
++              ) : (
++                <div className="state-msg">?라미터 ?이???음</div>
++              )}
++            </div>
++          )}
++
++          {/* YOLO 검???*/}
++          {activeTab === 'yolo_val' && (
++            <div className="yolo-val-section" style={{ padding: '20px', background: '#1a1a1a', borderRadius: '8px', color: '#fff', minHeight: '400px' }}>
++              <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#00D9A3', marginBottom: '16px', borderBottom: '1px solid #333', paddingBottom: '8px' }}>
++                ? YOLO 추적 vs 1??이???파?코?? ?치??검?              </h3>
++              <p style={{ fontSize: '13px', color: '#aaa', marginBottom: '24px', lineHeight: '1.6' }}>
++                YOLO 비디??분석 ?이?라?에??추출???술 ?보? 공식 1??계 ?이??SofaScore)??공식 ?이?? 매칭?여 ?확?? 검증합?다.
++              </p>
++              
++              {comparisonData?.validation && comparisonData.validation.length > 0 ? (
++                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
++                  {comparisonData.validation.map((v, idx) => {
++                    const labelMap = { 'possession': '? ?유??(%)', 'pass_accuracy': '?스 ?공?(%)' }
++                    const label = labelMap[v.metric_name] || v.metric_name
++                    const accuracy = v.accuracy_percent || 0
++                    
++                    return (
++                      <div key={idx} style={{ background: '#262626', padding: '16px', borderRadius: '6px', borderLeft: `4px solid ${accuracy >= 95 ? '#00D9A3' : '#f59e0b'}` }}>
++                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
++                          <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{label}</span>
++                          <span style={{ color: '#00D9A3', fontWeight: 'bold', fontSize: '14px' }}>?치?? {accuracy.toFixed(1)}%</span>
++                        </div>
++                        
++                        {/* 진행 ?*/}
++                        <div style={{ width: '100%', height: '8px', background: '#333', borderRadius: '4px', overflow: 'hidden', marginBottom: '12px' }}>
++                          <div style={{ width: `${accuracy}%`, height: '100%', background: '#00D9A3', borderRadius: '4px' }} />
++                        </div>
++                        
++                        {/* ?? ?이??비교 */}
++                        <div style={{ display: 'flex', justifyContent: 'space-around', fontSize: '12px', color: '#ccc' }}>
++                          <div>공식 1??이?? <strong style={{ color: '#fff' }}>{v.sofascore_value}%</strong></div>
++                          <div style={{ borderLeft: '1px solid #444', height: '14px' }} />
++                          <div>YOLO 추출 ?이?? <strong style={{ color: '#00D9A3' }}>{v.yolo_value}%</strong></div>
++                        </div>
++                      </div>
++                    )
++                  })}
++                </div>
++              ) : (
++                <div style={{ textAlign: 'center', padding: '40px 0', color: '#666' }}>
++                  검??이?? 존재?? ?습?다.
++                </div>
++              )}
++            </div>
++          )}
++        </div>
++      </div>
++
++      {/* ?? ?메?션 & ?술 ?션 ?? */}
++      <div className="match-tactic-section">
++        <div className="mts-header">
++          <span className="mts-title">?메?션 & ?술 분석</span>
++          <span className="mts-sub">K리그 ?이??기반 ?동 분류</span>
++        </div>
++        <FormationPitch
++          match={match}
++          homeLineup={lineups.filter(l => l.team_name === match.home_team)}
++          awayLineup={lineups.filter(l => l.team_name === match.away_team)}
++          events={events}
++          teamTactics={teamTactics}
++          parameters={parameters}
++        />
++        
++        {/* YOLO 기반 분석 ?각??추? */}
++        <YoloTacticalReport match={match} parameters={parameters} />
++      </div>
++    </div>
++  )
++}
++
++// position_detail 기반?로 ?수??메?션 ?인???확?게 배치?는 ?심 ?수
++// ?? position(GK/DF/MF/FW) 만으로는 4-2-3-1 같? ?메?션?서
++//     DM?AM??구분?????어 ?수가 ?뚱???인??배치??function getPositionTier(posDetail, posCode) {
++  const d = (posDetail || '').toLowerCase()
++  const c = (posCode || '').toUpperCase()
++
++  if (c === 'GK' || d.includes('goalkeeper')) return 0  // GK
++
++  // ?비 ?인 (tier 1)
++  if (d.includes('center back') || d.includes('left back') || d.includes('right back')) return 1
++
++  // ?비??미드?더 / ?백 (tier 2)
++  if (d.includes('defensive mid') || d.includes('wingback')) return 2
++
++  // 중앙 미드?더 (tier 3)
++  if (d.includes('central mid')) return 3
++
++  // 공격??미드?더 / ?어 (tier 4)
++  if (d.includes('attacking mid') || d.includes('winger')) return 4
++
++  // ?트?이?(tier 5)
++  if (d.includes('striker') || d.includes('forward') || d.includes('center forward')) return 5
++
++  // fallback: 기본 position 코드 기반
++  if (c === 'DF') return 1
++  if (c === 'MF') return 3
++  if (c === 'FW') return 5
++  return 3
++}
++
++// 좌우(Left/Right) ?렬??- ?치 ?로??서 결정
++function getLateralOrder(posDetail) {
++  const d = (posDetail || '').toLowerCase()
++  if (d.includes('left')) return 1
++  if (d.includes('center') || d.includes('central') || d.includes('striker')) return 2
++  if (d.includes('right')) return 3
++  return 2
++}
++
++function sortStartersToFormation(starters, formationStr) {
++  const formation = (formationStr || '4-4-2').split('-').map(Number)
++  if (!formation.every(n => !isNaN(n) && n > 0)) return starters
++
++  // ?메?션 ?인??요 ?원: [4, 2, 3, 1] ??  // ?인 ?덱??0=?비, 1=DM, 2=AM, 마??ST
++  const lineSlots = formation.map(n => n)
++
++  // ?수?을 tier 기??로 ?렬
++  const sorted = [...starters].sort((a, b) => {
++    const tA = getPositionTier(a.position_detail, a.position)
++    const tB = getPositionTier(b.position_detail, b.position)
++    if (tA !== tB) return tA - tB
++    return getLateralOrder(a.position_detail) - getLateralOrder(b.position_detail)
++  })
++
++  // GK 분리
++  const gk = sorted.find(p => getPositionTier(p.position_detail, p.position) === 0)
++  const outfield = sorted.filter(p => getPositionTier(p.position_detail, p.position) !== 0)
++
++  // ??인???수 배정 (tier ?서??채워?기)
++  const result = gk ? [gk] : []
++  let playerIdx = 0
++  for (let lineIdx = 0; lineIdx < lineSlots.length; lineIdx++) {
++    const count = lineSlots[lineIdx]
++    const linePlayers = outfield.slice(playerIdx, playerIdx + count)
++    // 같? ?인 ?에??Left ??Center ??Right ?서??정??    linePlayers.sort((a, b) => getLateralOrder(a.position_detail) - getLateralOrder(b.position_detail))
++    result.push(...linePlayers)
++    playerIdx += count
++  }
++
++  // ?머지 ?수가 ?으?추? (?전?치)
++  while (playerIdx < outfield.length) {
++    result.push(outfield[playerIdx])
++    playerIdx++
++  }
++
++  return result
++}
++
++function getHorizLayout(formationStr, side) {
++  const defaultFormation = [4, 4, 2]
++  let lines = defaultFormation
++  if (formationStr) {
++    const parts = formationStr.split('-').map(Number)
++    if (parts.length > 0 && parts.every(n => !isNaN(n))) {
++      lines = parts
++    }
++  }
++
++  const positions = []
++
++  // GK ?치 - ?? 골? ??  positions.push({ x: side === 'home' ? 3 : 97, y: 50, isGK: true })
++
++  // ??38%??: ?????기 반코??50%)?만 머물?록 ?한
++  // ?? GK(3%) ??DEF(10%) ??... ??FW(48%)
++  // ?웨?? GK(97%) ??DEF(90%) ??... ??FW(52%)
++  const numLines = lines.length
++  lines.forEach((count, lineIdx) => {
++    let xPct
++    if (side === 'home') {
++      xPct = 10 + (lineIdx / (numLines - 1 || 1)) * 38
++    } else {
++      xPct = 90 - (lineIdx / (numLines - 1 || 1)) * 38
++    }
++
++    for (let i = 0; i < count; i++) {
++      let yPct
++      if (count === 1) {
++        yPct = 50
++      } else if (count === 2) {
++        yPct = 30 + i * 40
++      } else if (count === 3) {
++        yPct = 18 + i * 32
++      } else {
++        yPct = 10 + (i / (count - 1)) * 80
++      }
++      positions.push({ x: xPct, y: yPct })
++    }
++  })
++
++  while (positions.length < 11) {
++    positions.push({ x: 50, y: 50 })
++  }
++  return positions.slice(0, 11)
++}
++
++// ?? 가??치 ?메?션 컴포?트 ??
++function FormationPitch({ match, homeLineup, awayLineup, events, teamTactics, parameters }) {
++  const homeFormation = homeLineup?.find(p => p.formation)?.formation || '4-4-2'
++  const awayFormation = awayLineup?.find(p => p.formation)?.formation || '4-4-2'
++
++  const homeStarters = sortStartersToFormation(
++    homeLineup?.filter(p => p.status?.toLowerCase() === 'starting') || [],
++    homeFormation
++  )
++  const awayStarters = sortStartersToFormation(
++    awayLineup?.filter(p => p.status?.toLowerCase() === 'starting') || [],
++    awayFormation
++  )
++  const homeSubs = homeLineup?.filter(p => p.status?.toLowerCase() === 'substitute') || []
++  const awaySubs = awayLineup?.filter(p => p.status?.toLowerCase() === 'substitute') || []
++
++  const tacColor = { '고압박형':'#ef4444','?유?형':'#3b82f6','카운?형':'#f59e0b','?블록??:'#8b5cf6' }
++
++  function getTacType(team) {
++    const tac = teamTactics[team]
++    const p = parameters?.find(x => x.team_name === team)
++    if (tac?.tactical_type) return tac.tactical_type
++    if (!p) return null
++    return p.press_intensity > 65 ? '고압박형' : p.defensive_line > 55 ? '?유?형' : p.press_intensity < 40 ? '?블록?? : '카운?형'
++  }
++
++  function getPlayerEv(name) {
++    if (!name) return {}
++    const goals = events.filter(e => e.event_type === 'GOAL' && e.player_name === name)
++    const cards = events.filter(e => e.event_type === 'CARD' && e.player_name === name)
++    const subOut = events.find(e => e.event_type === 'SUBST' && e.player_name === name)
++    const subIn  = events.find(e => e.event_type === 'SUBST' && e.assist_name === name)
++    return { goals, cards, subOut, subIn }
++  }
++
++  function PitchPlayer({ player, pos, color }) {
++    const isGK = pos.isGK || player?.position === 'GK'
++    const name = player?.player_name?.split(' ').slice(-1)[0] || '?'
++    const num  = player?.jersey_number ?? '?'
++    const ev   = getPlayerEv(player?.player_name)
++    const isRed = ev.cards?.some(c => c.detail_kr?.includes('?드'))
++    return (
++      <div className="fp-player" style={{ left:`${pos.x}%`, top:`${pos.y}%` }}>
++        <div className="fp-jersey" style={{ background: isGK ? '#ec4899' : color }}>
++          {num}
++        </div>
++        <div className="fp-ev-row">
++          {ev.goals?.map((_, i) => <span key={i} className="fp-ev goal">??/span>)}
++          {ev.cards?.length > 0 && <span className="fp-ev card" style={{ background: isRed ? '#ef4444' : '#f59e0b' }} />}
++          {ev.subOut && <span className="fp-ev subout">??ev.subOut.minute}'</span>}
++        </div>
++        <div className="fp-pname">{name}</div>
++      </div>
++    )
++  }
++
++  function SubList({ players, side }) {
++    return (
++      <div className={`fp-sublist fp-sublist-${side}`}>
++        <div className="fp-sublist-title">교체</div>
++        {players.slice(0, 9).map(p => {
++          const ev = getPlayerEv(p.player_name)
++          const isRed = ev.cards?.some(c => c.detail_kr?.includes('?드'))
++          return (
++            <div key={p.id ?? p.player_name} className="fp-subrow">
++              {side === 'right' && <>
++                {ev.subIn  && <span className="fp-ev subin">??ev.subIn.minute}'</span>}
++                {ev.goals?.length > 0 && <span className="fp-ev goal">??/span>}
++                {ev.cards?.length > 0 && <span className="fp-ev card" style={{ background: isRed ? '#ef4444' : '#f59e0b' }} />}
++                <span className="fp-sub-name">{p.player_name?.split(' ').slice(-1)[0]}</span>
++                <span className="fp-sub-num">{p.jersey_number}</span>
++              </>}
++              {side === 'left' && <>
++                <span className="fp-sub-num">{p.jersey_number}</span>
++                <span className="fp-sub-name">{p.player_name?.split(' ').slice(-1)[0]}</span>
++                {ev.goals?.length > 0 && <span className="fp-ev goal">??/span>}
++                {ev.cards?.length > 0 && <span className="fp-ev card" style={{ background: isRed ? '#ef4444' : '#f59e0b' }} />}
++                {ev.subIn  && <span className="fp-ev subin">??ev.subIn.minute}'</span>}
++              </>}
++            </div>
++          )
++        })}
++      </div>
++    )
++  }
++
++  const homePos = getHorizLayout(homeFormation, 'home')
++  const awayPos = getHorizLayout(awayFormation, 'away')
++  const homeTac = getTacType(match.home_team)
++  const awayTac = getTacType(match.away_team)
++
++  return (
++    <div className="fp-wrap">
++      {/* ? ?더 */}
++      <div className="fp-team-headers">
++        <div className="fp-team-info left">
++          <img src={match.home_logo} alt={match.home_team} className="fp-logo" onError={e=>e.target.style.display='none'} />
++          <div>
++            <div className="fp-team-name">{match.home_team}</div>
++            <div className="fp-formation-str">{homeFormation}</div>
++            {homeTac && <span className="fp-tac-badge" style={{ background: tacColor[homeTac]+'22', color: tacColor[homeTac], border:`1px solid ${tacColor[homeTac]}` }}>{homeTac}</span>}
++          </div>
++        </div>
++        <div className="fp-team-info right">
++          <div style={{ textAlign:'right' }}>
++            <div className="fp-team-name">{match.away_team}</div>
++            <div className="fp-formation-str">{awayFormation}</div>
++            {awayTac && <span className="fp-tac-badge" style={{ background: tacColor[awayTac]+'22', color: tacColor[awayTac], border:`1px solid ${tacColor[awayTac]}` }}>{awayTac}</span>}
++          </div>
++          <img src={match.away_logo} alt={match.away_team} className="fp-logo" onError={e=>e.target.style.display='none'} />
++        </div>
++      </div>
++
++      {/* ?치 + 교체 */}
++      <div className="fp-main">
++        <SubList players={homeSubs} side="left" />
++
++        <div className="fp-pitch">
++          {/* ?치 마킹 */}
++          <div className="fp-mark fp-center-line" />
++          <div className="fp-mark fp-center-circle" />
++          <div className="fp-mark fp-box fp-box-left" />
++          <div className="fp-mark fp-box fp-box-right" />
++          <div className="fp-mark fp-goal fp-goal-left" />
++          <div className="fp-mark fp-goal fp-goal-right" />
++
++          {/* ?? (??계열, ?쪽?오른쪽 공격) */}
++          {homePos.map((pos, i) => (
++            <PitchPlayer key={`h${i}`} player={homeStarters[i]} pos={pos} color="#4a9be8" />
++          ))}
++
++          {/* ?웨?? (빨간계열, ?른쪽→?쪽 공격) */}
++          {awayPos.map((pos, i) => (
++            <PitchPlayer key={`a${i}`} player={awayStarters[i]} pos={pos} color="#e85c5c" />
++          ))}
++        </div>
++
++        <SubList players={awaySubs} side="right" />
++      </div>
++
++      {/* 범? */}
++      <div className="fp-legend">
++        <span>???점</span>
++        <span><span className="fp-ev card" style={{background:'#f59e0b',display:'inline-block',width:9,height:12,verticalAlign:'middle',borderRadius:1}} /> 경고</span>
++        <span><span className="fp-ev card" style={{background:'#ef4444',display:'inline-block',width:9,height:12,verticalAlign:'middle',borderRadius:1}} /> ?장</span>
++        <span className="fp-ev subout" style={{fontSize:10}}>??교체?웃</span>
++        <span className="fp-ev subin" style={{fontSize:10}}>??교체??/span>
++      </div>
++    </div>
++  )
++}
++
++// ?제 교체 ?이??(DB 기반, 2021.02.21 PSG vs Monaco)
++const PSG_SUBS = [
++  { out: 'Herrera',  outFull: 'Ander Herrera',   outPos: '미드?더',      minute: 55, inKey: 'Verratti',  inFull: 'Marco Verratti',   inPos: '?레?메?커' },
++  { out: 'Gueye',   outFull: 'Idrissa Gueye',    outPos: '?비??MF',     minute: 71, inKey: 'Rafinha',   inFull: 'Rafinha',          inPos: '공격??MF' },
++  { out: 'Kurzawa', outFull: 'Layvin Kurzawa',   outPos: '?프?백',      minute: 71, inKey: 'Draxler',  inFull: 'Julian Draxler',   inPos: '공격???어' },
++  { out: 'Paredes', outFull: 'Leandro Paredes',  outPos: '?비??MF',     minute: 71, inKey: 'Danilo',   inFull: 'Danilo Pereira',   inPos: '?비??MF' },
++]
++const MONACO_SUBS = [
++  { out: 'BenYedder', outFull: 'Wissam Ben Yedder', outPos: '?트?이?,   minute: 71, inKey: 'Jovetic',  inFull: 'Stevan Jovetic',       inPos: '?워?? },
++  { out: 'Aguilar',   outFull: 'Ruben Aguilar',     outPos: '?이???백', minute: 80, inKey: 'Sidibe',   inFull: 'Djibril Sidibe',       inPos: '?비?? },
++  { out: 'Diop',      outFull: 'Sofiane Diop',      outPos: '공격??MF',   minute: 80, inKey: 'Golovin',  inFull: 'Aleksandr Golovin',    inPos: '미드?더' },
++  { out: 'Henrique',  outFull: 'Caio Henrique',     outPos: '?프???백', minute: 90, inKey: 'Ballo',    inFull: 'Fode Ballo-Toure',     inPos: '?비?? },
++]
++
++function YoloTacticalReport({ match, parameters }) {
++  const [selectedTeam, setSelectedTeam] = useState('PSG')
++  const [selectedSubIdx, setSelectedSubIdx] = useState(0)
++  const [perspective, setPerspective] = useState('us')
++
++  const subList = selectedTeam === 'PSG' ? PSG_SUBS : MONACO_SUBS
++  const currentSub = subList[selectedSubIdx] || subList[0]
++  const { out: selectedOut, inKey: selectedIn, minute: subMinute } = currentSub
++
++  const SIMULATION_DATA = {
++    'Herrera_Verratti': {
++      areaText: '+14.2% ?장',
++      areaPercent: 84,
++      posComment: '베라???입 즉시 모나코의 ?이?레???박 ?인???로 12m 밀?났?며, PSG 중원 ?스 루트가 ????복?었?니??',
++      counterIndexText: 'Monaco 72% (보통)',
++      counterPercent: 72,
++      counterSpeedText: '5.5m/s',
++      counterComment: '베라?의 ?리???치 ?정??스 차단?로 모나코의 ?이?트 롱볼 ?? 개시 ?도가 초당 5.5m??어?었?니??',
++      setpieceHeight: 20,
++      setpieceDrill: 'Zone Defense Block Drill A',
++      setpieceComment: '?균 ?장?????나 ?치 ?정 지?이 ?아???어 ?스?????마크 ?공률이 55%??승?니??',
++      matchRateUs: 73,
++      matchCommentUs: '베라?의 좌우 ?스 ?개 ?향(?리 강점)??? ?비 ?점(모나?좌측 배후)??교차 ?너지가 73% ?치?니??',
++      matchRateThem: 62,
++      matchCommentThem: '베라???입?로 ?비 차단 지?이 증??여 모나코의 ?측 공격 루트(?? 강점)?????PSG 좌측 배후 ?출(?리 ?점) 매칭??62%??어?니??'
++    },
++    'Herrera_Rafinha': {
++      areaText: '+18.5% ?장 (?진 빌드??',
++      areaPercent: 92,
++      posComment: '?피?의 ?진 ?리블과 ?측 ?프?페?스 ?격으?PSG???이???드 ??공격 빌드??면적??극??되?습?다.',
++      counterIndexText: 'Monaco 89% (매우 ?험)',
++      counterPercent: 89,
++      counterSpeedText: '6.8m/s',
++      counterComment: '?피?의 공격 ?진 ?향?로 ?해 복? ?랜지???도가 지?되? 모나코의 ?? ?방 공간 면적??89% ?출?니??',
++      setpieceHeight: 32,
++      setpieceDrill: 'Defensive Transition Drill B',
++      setpieceComment: '?피?의 ?공?경합 ?점?로 ?해 ?어?스??부??트?스 ?점 리스?? ?험 ??(High)?로 ?승?니??',
++      matchRateUs: 89,
++      matchCommentUs: '?? ?측 ?프?페?스 균열 구역(?? ?점)??피?의 ?극?인 ?진 경로(?리 강점)가 89% 매치?어 ?력??뿜어?니??',
++      matchRateThem: 84,
++      matchCommentThem: '?피?의 ?? ?진???에 PSG???측 배후(?리 ?점)??모나코의 빠른 카운??침투 ?개(?? 강점)가 84% ?버?되???점 ?험??????출?니??'
++    },
++    'Herrera_MoiseKean': {
++      areaText: '+9.8% ?장 (공격 집중)',
++      areaPercent: 65,
++      posComment: '미드?더?빼고 공격?? ?입??박스 ???자???었?나, 중원?서 볼을 쥐어??유 ?역? ?게 감소?습?다.',
++      counterIndexText: 'Monaco 95% (최고 ?험)',
++      counterPercent: 95,
++      counterSpeedText: '7.4m/s',
++      counterComment: '미드?더 밸런??붕괴?모나??? ??배후 공간???전???출?며 ?점 ?협??95%?최고조에 ?합?다.',
++      setpieceHeight: 10,
++      setpieceDrill: 'Man-to-Man Marker System C',
++      setpieceComment: '?의 ??컬과 ?더 ?공??보(?공?78%) ?분??코너???비 ??공중?처리 ?험 Zone?????축소?니??',
++      matchRateUs: 54,
++      matchCommentUs: '박스 ???이?트 롱볼 매칭? 가?하지? ?프?페?스 ?계 ?점??찌르??강점 매칭? 54%?감소?니??',
++      matchRateThem: 91,
++      matchCommentThem: '중원 ?자가 1?줄어?면??모나코의 ?패??공격 ?개(?? 강점)? PSG ?비 1??지??붕괴(?리 ?점) 매칭??91%???박?니??'
++    },
++    'Paredes_Verratti': {
++      areaText: '+11.5% ?장',
++      areaPercent: 78,
++      posComment: '?비??미드?더 ?레?스가 빠??조율??베라?? ?어? ?패??빌드??주도 ?역??모나?진영?로 ?진?습?다.',
++      counterIndexText: 'Monaco 78% (?험)',
++      counterPercent: 78,
++      counterSpeedText: '5.8m/s',
++      counterComment: '중원 ?비 1??지?이 ?화?어 모나코의 ?가로채??간 1?복? ?도가 초당 5.8m??승?니??',
++      setpieceHeight: 22,
++      setpieceDrill: 'Zone Defense Block Drill A',
++      setpieceComment: '?트?스 공중??공?차단?이 48%?준?한 ???로 ?탄?됩?다.',
++      matchRateUs: 68,
++      matchCommentUs: '?레?스 ???진 ?스 ?개 각도가 ?양?졌?나, ?????점 ?인?? 직접 ?어?는 루트 ?치??68%?니??',
++      matchRateThem: 68,
++      matchCommentThem: '베라?의 ?비 커버 ?에 모나코의 ?이?트 ?스 경로? PSG???비 균열 구역(?리 ?점)???출 매칭률이 68%??폭 ?향 ?정?니??'
++    },
++    'Paredes_Rafinha': {
++      areaText: '+15.2% ?장',
++      areaPercent: 88,
++      posComment: '?피?? PSG 빌드?의 중심??맡으??이???드 ?방 침투 ?스 ?향???보?는 중원 ??으?변?했?니??',
++      counterIndexText: 'Monaco 92% (매우 ?험)',
++      counterPercent: 92,
++      counterSpeedText: '7.1m/s',
++      counterComment: '중원 1??지??부?? ?피?의 복? ?레?로 ?해 ?? ??취 ??3.5?만에 ?프?인???파?합?다.',
++      setpieceHeight: 35,
++      setpieceDrill: 'Set-piece Zone Defense C',
++      setpieceComment: '박스 ?????방어 ?균 ?공률이 28%?최?치에 근접???트?스 불안?소가 극??됩?다.',
++      matchRateUs: 82,
++      matchCommentUs: '모나??비 조직??좌측 ?프?페?스 균열 구역(?? ?점)???피?? ?극 ?릴 ???어 공격 매칭 ?너지가 82%???박?니??',
++      matchRateThem: 88,
++      matchCommentThem: '?백 ??보호??레?스) 부?? ?피?의 ?진?로, 모나코의 ?방 침투(?? 강점)? ?리 ?백 ???픈 ?페?스(?리 ?점)가 88% 고강?로 매칭?니??'
++    },
++    'Paredes_MoiseKean': {
++      areaText: '+7.5% ?장 (?백 보호 ?화)',
++      areaPercent: 58,
++      posComment: '?레?스 ???공격???이 ?입?며 4-2-4??가까운 극단?인 공격 ?술?변모하??중원 지배력???게 ?화?니??',
++      counterIndexText: 'Monaco 98% (?앙 ??)',
++      counterPercent: 98,
++      counterSpeedText: '8.2m/s',
++      counterComment: '?백??보호?는 ?비??미드?더가 ?무?여 모나?롱볼???어지??즉시 ?????팅 ?기??주??니??',
++      setpieceHeight: 8,
++      setpieceDrill: 'Man-to-Man Marker System C',
++      setpieceComment: '?과 ?톱???방 ?악?과 ?트?스 ?공?강화??더 ?점 리스?? 가????집니??',
++      matchRateUs: 48,
++      matchCommentUs: '?? ?점 구역???기?으?교차?는 공격 매칭? 48%??불과?며, ?직 직선?인 ?로?에 ?존?게 ?니??',
++      matchRateThem: 96,
++      matchCommentThem: '?비??미드?더 ?무??해 모나코의 ?컨????역 ?개(?? 강점)가 PSG 중앙 ?비 ?면 빈공??리 ?점)?96% ?전???치??극도?취약?니??',
++    },
++    'BenYedder_Jovetic': {
++      areaText: '+2.1% (?비 ?정 ?환)',
++      areaPercent: 45,
++      posComment: '??데르? ?웃?며 최전??박?이 급감. 조베?치 ?입?로 ?방 ?박보다 ?비 ?정???한 코바?감독???택?니??',
++      counterIndexText: 'PSG 55% (보통)',
++      counterPercent: 55,
++      counterSpeedText: '4.8m/s',
++      counterComment: '?방 ?박 감소?PSG??빌드???도 ?수가 증??나, 5-4-1 ?비 블록 ?성?로 박스 침투???한?니??',
++      setpieceHeight: 18,
++      setpieceDrill: 'Compact Block Defensive Drill',
++      setpieceComment: '조베?치???트?스 공중 경합 ?력???? ?어?스???비 공백???폭 증??니??',
++      matchRateUs: 38,
++      matchCommentUs: '??유 ?정 ???? ?환 매칭률이 38%??한?니??',
++      matchRateThem: 61,
++      matchCommentThem: 'PSG??측면 ?파(?? 강점)? 모나??비 측면 공백(?리 ?점)??61% 매칭?니??',
++    },
++    'Aguilar_Sidibe': {
++      areaText: '-5.3% (?측 ??축소)',
++      areaPercent: 38,
++      posComment: '?길?르??공격???버?이 ?라지??디베의 ?비?????닝?로 ?측 공격 ?? ???축소?니??',
++      counterIndexText: 'PSG 48% (?정)',
++      counterPercent: 48,
++      counterSpeedText: '4.2m/s',
++      counterComment: '?비 ?께가 강화?어 PSG???? ?도?초당 4.2m??제?니??',
++      setpieceHeight: 12,
++      setpieceDrill: 'Zone Defense Block Drill A',
++      setpieceComment: '?디베의 강한 ??컬로 ?측 코너???비 ?공률이 72%??상?니??',
++      matchRateUs: 32,
++      matchCommentUs: '?비 ?정 ?주??공격 매칭률이 32%??그칩?다.',
++      matchRateThem: 45,
++      matchCommentThem: 'PSG 좌측 공격(Mbappe)?모나??측 ?비 강화가 맞붙???출률이 45%???집니??',
++    },
++    'Diop_Golovin': {
++      areaText: '+8.7% (중원 창의??강화)',
++      areaPercent: 62,
++      posComment: '골로빈의 창의???리블과 ?방 ?스 ?력?로 중원 ?유 빌드??면적???장?니??',
++      counterIndexText: 'PSG 67% (?험)',
++      counterPercent: 67,
++      counterSpeedText: '5.9m/s',
++      counterComment: '골로빈의 ?진 ?향?로 ?비 복? ??공백???겨 PSG ?? ?협??증??니??',
++      setpieceHeight: 25,
++      setpieceDrill: 'Set-piece Zone Defense B',
++      setpieceComment: '골로빈의 ?리??직접 ?협??PSG ?비???트?스 긴장감을 ?입?다.',
++      matchRateUs: 71,
++      matchCommentUs: '골로빈의 ?프?페?스 침투? PSG ?비 ?점 구역??71% 매칭?니??',
++      matchRateThem: 69,
++      matchCommentThem: 'PSG 중원 ?박?골로?공간 ?용 충돌??호 ?협 ?출률이 69%?니??',
++    },
++    'Henrique_Ballo': {
++      areaText: '-8.2% (좌측 공격 ?기)',
++      areaPercent: 28,
++      posComment: '90?볼로-?레 ?입? ?비 강화 목적. 3-0 리드 ?황?서 좌측 ?백 공격 가?을 ?전???기?니??',
++      counterIndexText: 'PSG 35% (최소??',
++      counterPercent: 35,
++      counterSpeedText: '3.5m/s',
++      counterComment: '5??비 블록???성?어 PSG ?? 침투 ?협??35%?최소?합?다.',
++      setpieceHeight: 8,
++      setpieceDrill: 'Man-to-Man Lock Drill',
++      setpieceComment: '볼로-?레??강한 ???마킹?로 코너???점 리스?? 최소 ???니??',
++      matchRateUs: 18,
++      matchCommentUs: '공격 ?기 ?술??? ?점 ?용 매칭률이 18%?최?치입?다.',
++      matchRateThem: 32,
++      matchCommentThem: 'PSG 좌측 공격 루트가 봉쇄?어 ?? 강점 ?출률이 32%??어?니??',
++    },
++  };
++
++  const comboKey = `${selectedOut}_${selectedIn}`;
++  const currentData = SIMULATION_DATA[comboKey] || SIMULATION_DATA['Herrera_Verratti'];
++
++  return (
++    <div className="yolo-tactical-report-card" style={{ marginTop: '36px', background: '#ffffff', borderRadius: '16px', padding: '28px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' }}>
++      
++      {/* ?? ?더 ?컨트??널 ?? */}
++      <div style={{ background: '#1e293b', color: '#ffffff', padding: '20px 24px', borderRadius: '12px', marginBottom: '32px' }}>
++        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
++          <div>
++            <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#00D9A3', textTransform: 'uppercase', letterSpacing: '1px' }}>Interactive Simulator</span>
++            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: '4px 0 0 0' }}>
++              ? ?시?교체 ?술 ???이??({selectedTeam})
++            </h3>
++            <p style={{ fontSize: '12px', color: '#94a3b8', margin: '4px 0 0 0' }}>
++              ?제 경기(2021.02.21) 교체 ?점 기반 ??교체 직후 ?술 변?? 분석?니??
++            </p>
++          </div>
++
++          {/* ? ?? */}
++          <div style={{ display: 'flex', gap: '8px' }}>
++            {['PSG', 'AS_Monaco'].map(t => (
++              <button key={t} type="button"
++                onClick={() => { setSelectedTeam(t); setSelectedSubIdx(0); }}
++                style={{
++                  padding: '6px 16px', borderRadius: '20px', border: 'none', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px',
++                  background: selectedTeam === t ? '#00D9A3' : '#334155',
++                  color: selectedTeam === t ? '#0f172a' : '#94a3b8',
++                  transition: 'all 0.2s'
++                }}
++              >{t}</button>
++            ))}
++          </div>
++
++          {/* 교체 ?택 ?롭?운 */}
++          <div style={{ background: '#334155', padding: '12px 18px', borderRadius: '8px', border: '1px solid #475569' }}>
++            <span style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '8px', display: 'block' }}>교체 ?택 (?제 경기 교체 목록)</span>
++            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
++              {subList.map((s, i) => (
++                <button key={i} type="button"
++                  onClick={() => setSelectedSubIdx(i)}
++                  style={{
++                    padding: '6px 12px', borderRadius: '6px', border: '1px solid',
++                    borderColor: selectedSubIdx === i ? '#00D9A3' : '#475569',
++                    background: selectedSubIdx === i ? 'rgba(0,217,163,0.15)' : '#1e293b',
++                    color: selectedSubIdx === i ? '#00D9A3' : '#94a3b8',
++                    fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s',
++                    whiteSpace: 'nowrap'
++                  }}
++                >
++                  <span style={{ color: '#f87171' }}>{s.minute}'</span> {s.outFull.split(' ').slice(-1)[0]} ??{s.inFull.split(' ').slice(-1)[0]}
++                </button>
++              ))}
++            </div>
++            <div style={{ marginTop: '10px', fontSize: '12px', color: '#e2e8f0', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
++              <span>?️ <strong style={{ color: '#f87171' }}>{subMinute}'</strong> 교체 ?행</span>
++              <span>?웃: <strong style={{ color: '#f87171' }}>{currentSub.outFull}</strong> ({currentSub.outPos})</span>
++              <span style={{ color: '#00D9A3' }}>??/span>
++              <span>?입: <strong style={{ color: '#4ade80' }}>{currentSub.inFull}</strong> ({currentSub.inPos})</span>
++            </div>
++          </div>
++        </div>
++      </div>
++
++      {/* ??목 */}
++      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', borderBottom: '2px solid #f1f5f9', paddingBottom: '16px' }}>
++        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
++          <span style={{ fontSize: '24px' }}>?</span>
++          <div>
++            <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: 0 }}>4? ?심 ?술 분석 결과</h3>
++            <p style={{ fontSize: '11px', color: '#64748b', margin: 0, marginTop: '2px' }}>{subMinute}' {currentSub.outFull} OUT ??{currentSub.inFull} IN ???이??결과</p>
++          </div>
++        </div>
++        <div style={{ fontSize: '11px', fontWeight: 'bold', background: '#dcfce7', color: '#15803d', padding: '4px 12px', borderRadius: '20px', border: '1px solid #bbf7d0' }}>
++          ?시??산 가???        </div>
++      </div>
++
++      {/* 4? 분석 과제 그리???이?웃 */}
++      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
++        
++        {/* 과제 1. 교체 ????변??분석 */}
++        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', transition: 'all 0.3s ease' }}>
++          <div>
++            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
++              <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
++                <span style={{ color: '#00D9A3' }}>1.</span> 교체 ????변??& 공간 창출
++              </h4>
++              <span style={{ fontSize: '10px', fontWeight: 'bold', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
++                ? YOLO ?래???결
++              </span>
++            </div>
++            
++            <p style={{ fontSize: '12px', color: '#475569', lineHeight: '1.6', margin: '0 0 16px 0' }}>
++              기존 1??크?핑 ?이?로???인 불??했??<strong>"교체 직후 ?리???간 공간 변??</strong>?YOLOv11 ?상 분석 ?이?라?을 구축??22??수 ?원 ?치 ?이??? ?래??????하???술 변?? 규명?습?다.
++            </p>
++
++            {/* ?각??그래???역 */}
++            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', marginBottom: '14px' }}>
++              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', marginBottom: '8px' }}>
++                <span style={{ color: '#ef4444', fontWeight: 'bold' }}>{selectedOut} (OUT)</span>
++                <span style={{ color: '#64748b' }}>??/span>
++                <span style={{ color: '#10b981', fontWeight: 'bold' }}>{selectedIn} (IN)</span>
++              </div>
++              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px' }}>
++                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
++                  <span style={{ color: '#64748b' }}>중원 ?유 빌드??면적</span>
++                  <span style={{ fontWeight: 'bold', color: '#10b981' }}>{currentData.areaText}</span>
++                </div>
++                <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
++                  <div style={{ width: `${currentData.areaPercent}%`, height: '100%', background: '#10b981', transition: 'width 0.4s ease' }} />
++                </div>
++              </div>
++            </div>
++          </div>
++          <div style={{ fontSize: '11px', color: '#64748b', borderTop: '1px dashed #cbd5e1', paddingTop: '10px', lineHeight: '1.4', minHeight: '44px' }}>
++            <strong>? 분석 결과:</strong> {currentData.posComment}
++          </div>
++        </div>
++
++        {/* 과제 2. ?? ?협 지??분석 */}
++        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', transition: 'all 0.3s ease' }}>
++          <div>
++            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
++              <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
++                <span style={{ color: '#00D9A3' }}>2.</span> ?시??? ?협 지??(Counter)
++              </h4>
++              <span style={{ fontSize: '10px', fontWeight: 'bold', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
++                ? YOLO ?래???결
++              </span>
++            </div>
++            
++            <p style={{ fontSize: '12px', color: '#475569', lineHeight: '1.6', margin: '0 0 16px 0' }}>
++              ??환 ?간 ?비 복? ?간??방 ?픈 ?페?스??시?측정?야 ?는 과제? <strong>YOLO ?래?????레?어 기하??측정</strong>???해 ?? ?협 지?? ?출?습?다.
++            </p>
++
++            {/* ?각??그래???역 */}
++            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', marginBottom: '14px' }}>
++              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
++                <span>?차단 ?점 ?방 ?? 침투 ?협 지??/span>
++                <span style={{ fontWeight: 'bold', color: '#ef4444' }}>{currentData.counterIndexText}</span>
++              </div>
++              <div style={{ display: 'flex', height: '10px', borderRadius: '5px', overflow: 'hidden', background: '#e2e8f0', marginBottom: '8px' }}>
++                <div style={{ width: `${100 - currentData.counterPercent}%`, background: '#4a9be8', transition: 'width 0.4s ease' }} />
++                <div style={{ width: `${currentData.counterPercent}%`, background: '#e85c5c', transition: 'width 0.4s ease' }} />
++              </div>
++              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#64748b' }}>
++                <span>PSG ?협 ?비율: {100 - currentData.counterPercent}%</span>
++                <span>Monaco ?도: {currentData.counterSpeedText}</span>
++              </div>
++            </div>
++          </div>
++          <div style={{ fontSize: '11px', color: '#64748b', borderTop: '1px dashed #cbd5e1', paddingTop: '10px', lineHeight: '1.4', minHeight: '44px' }}>
++            <strong>? 분석 결과:</strong> {currentData.counterComment}
++          </div>
++        </div>
++
++        {/* 과제 3. ?트?스 불안 구역 & ?련 ?릴 추천 */}
++        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', transition: 'all 0.3s ease' }}>
++          <div>
++            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
++              <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
++                <span style={{ color: '#3b82f6' }}>3.</span> ?트?스 취약 구역 & ?련 추천
++              </h4>
++              <span style={{ fontSize: '10px', fontWeight: 'bold', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '12px', border: '1px solid #bfdbfe' }}>
++                ? 1??이???결
++              </span>
++            </div>
++            
++            <p style={{ fontSize: '12px', color: '#475569', lineHeight: '1.6', margin: '0 0 16px 0' }}>
++              SofaScore ?팅? 코너???하지??xG 분포 ??<strong>집계???이??모델?/strong>만으??트?스 불안 구역???교?게 ?출???며, 보완???한 맞춤???련 ?로그램??처방?니??
++            </p>
++
++            {/* ?각??그래???역 */}
++            <div style={{ display: 'flex', gap: '10px', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px', marginBottom: '14px' }}>
++              <div style={{ flex: 1, position: 'relative', height: '60px', background: '#22c55e', borderRadius: '4px', overflow: 'hidden' }}>
++                {/* 골? 박스 ?역 취약 구역 ?시 */}
++                <div style={{ 
++                  position: 'absolute', 
++                  right: 0, 
++                  top: '15px', 
++                  width: '25px', 
++                  height: `${currentData.setpieceHeight + 15}px`, 
++                  border: '2px solid rgba(255,255,255,0.8)', 
++                  background: 'rgba(239,68,68,0.4)',
++                  transition: 'height 0.4s ease'
++                }} />
++                <span style={{ position: 'absolute', right: '5px', top: '22px', fontSize: '9px', fontWeight: 'bold', color: '#fff' }}>?험 Zone</span>
++              </div>
++              <div style={{ flex: 1.2, fontSize: '10px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
++                <div style={{ fontWeight: 'bold', color: '#1e40af', marginBottom: '4px' }}>추천 ?련 ?릴</div>
++                <div style={{ background: '#eff6ff', padding: '4px 6px', borderRadius: '4px', border: '1px solid #dbeafe', color: '#1e3a8a', fontWeight: '500', transition: 'all 0.3s' }}>
++                  ??♂?{currentData.setpieceDrill}
++                </div>
++              </div>
++            </div>
++          </div>
++          <div style={{ fontSize: '11px', color: '#64748b', borderTop: '1px dashed #cbd5e1', paddingTop: '10px', lineHeight: '1.4', minHeight: '44px' }}>
++            <strong>? 분석 결과:</strong> {currentData.setpieceComment}
++          </div>
++        </div>
++
++        {/* 과제 4. ?? ?점 x ?리 강점 교차 분석 */}
++        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', transition: 'all 0.3s ease' }}>
++          <div>
++            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
++              <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
++                <span style={{ color: '#3b82f6' }}>4.</span> ?? ?점 x ?리 강점 교차 분석
++              </h4>
++              <span style={{ fontSize: '10px', fontWeight: 'bold', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '12px', border: '1px solid #bfdbfe' }}>
++                ? 1??이???결
++              </span>
++            </div>
++            
++            <p style={{ fontSize: '12px', color: '#475569', lineHeight: '1.6', margin: '0 0 16px 0' }}>
++              ?? ?비 조직?????용 공간(?점 구역)??리 ???최다 ?시?트/?스 개시 방향(강점 구역)??<strong>?트??이??교차 ?버??/strong>???해 ?점 ?률 극????인?? ?각?했?니??
++            </p>
++
++            {/* ?점 ?택 ?? ??*/}
++            <div style={{ display: 'flex', background: '#e2e8f0', borderRadius: '6px', padding: '2px', marginBottom: '14px' }}>
++              <button 
++                type="button"
++                onClick={() => setPerspective('us')}
++                style={{ 
++                  flex: 1, 
++                  fontSize: '11px', 
++                  fontWeight: 'bold', 
++                  padding: '6px', 
++                  border: 'none', 
++                  borderRadius: '4px', 
++                  cursor: 'pointer', 
++                  background: perspective === 'us' ? '#fff' : 'transparent', 
++                  color: perspective === 'us' ? '#1e293b' : '#64748b', 
++                  boxShadow: perspective === 'us' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
++                  transition: 'all 0.2s'
++                }}
++              >
++                ??PSG (?리 공격 기?)
++              </button>
++              <button 
++                type="button"
++                onClick={() => setPerspective('them')}
++                style={{ 
++                  flex: 1, 
++                  fontSize: '11px', 
++                  fontWeight: 'bold', 
++                  padding: '6px', 
++                  border: 'none', 
++                  borderRadius: '4px', 
++                  cursor: 'pointer', 
++                  background: perspective === 'them' ? '#fff' : 'transparent', 
++                  color: perspective === 'them' ? '#1e293b' : '#64748b', 
++                  boxShadow: perspective === 'them' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
++                  transition: 'all 0.2s'
++                }}
++              >
++                ??Monaco (?? 공격 기?)
++              </button>
++            </div>
++
++            {/* ?각??그래???역 */}
++            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px', marginBottom: '14px' }}>
++              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
++                <span>{perspective === 'us' ? '?? ?점 × ?리 강점 매칭? : '?리 ?점 × ?? 강점 ?출?}</span>
++                <span style={{ fontWeight: 'bold', color: perspective === 'us' ? '#8b5cf6' : '#f59e0b' }}>
++                  {perspective === 'us' ? currentData.matchRateUs : currentData.matchRateThem}% ?치
++                </span>
++              </div>
++              <div style={{ width: '100%', height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
++                <div style={{ 
++                  width: `${perspective === 'us' ? currentData.matchRateUs : currentData.matchRateThem}%`, 
++                  height: '100%', 
++                  background: perspective === 'us' ? 'linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%)' : 'linear-gradient(90deg, #e85c5c 0%, #f59e0b 100%)',
++                  transition: 'width 0.4s ease'
++                }} />
++              </div>
++            </div>
++          </div>
++          <div style={{ fontSize: '11px', color: '#64748b', borderTop: '1px dashed #cbd5e1', paddingTop: '10px', lineHeight: '1.4', minHeight: '56px' }}>
++            <strong>? 분석 결과:</strong> {perspective === 'us' ? currentData.matchCommentUs : currentData.matchCommentThem}
++          </div>
++        </div>
++
++      </div>
++
++      {/* ?? ?시?HUD ?분석 ?로?스 ??지 ?션 추? ?? */}
++      <div style={{ marginTop: '36px', borderTop: '2px solid #f1f5f9', paddingTop: '28px' }}>
++        <h4 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
++          <span>??/span> YOLOv11 분석 ?시?HUD ??이??보정 ?로?스
++        </h4>
++
++        {/* 1. HUD ??트???지 그리??*/}
++        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px', marginBottom: '28px' }}>
++          {/* ?시??술 HUD 카드 */}
++          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
++            <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b', marginBottom: '10px', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '6px' }}>
++              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }}></span>
++              ?시?객체 ?래??HUD ??보??            </div>
++            <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
++              <img src="/artifacts/tactical_analysis_dashboard.png" alt="YOLO HUD Dashboard" style={{ width: '100%', height: 'auto', display: 'block' }} />
++            </div>
++            <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', textAlign: 'left', lineHeight: '1.4', margin: '8px 0 0 0' }}>
++              <strong>기술 ?세:</strong> YOLOv11 모델???레?당 22명의 ?수 ?치, ?판, 그리?볼의 바운??박스????고 ?용 HUD 가?드 ?인(?비??깊이 ??박 반경)??캔버???버?이?출력??모습?니??
++            </p>
++          </div>
++
++          {/* 2D ?영 ?트?카드 */}
++          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
++            <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b', marginBottom: '10px', textAlign: 'left', display: 'flex', alignItems: 'center', gap: '6px' }}>
++              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6' }}></span>
++              ?모그래???면 ?영 ?트?            </div>
++            <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
++              <img src="/artifacts/tactical_heatmap.png" alt="Homography Heatmap" style={{ width: '100%', height: 'auto', display: 'block' }} />
++            </div>
++            <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', textAlign: 'left', lineHeight: '1.4', margin: '8px 0 0 0' }}>
++              <strong>기술 ?세:</strong> 카메???? ?의 ?근??차??모그래???렬(Homography Matrix) 보정???해 2차원 ?뷰(Top-down) ?치 좌표계로 ?사 ?영?여 ???한 밀???트?분석 ?료?니??
++            </p>
++          </div>
++        </div>
++
++        {/* 2. 3?계 ?이??보정 ?제 ?로?스 갤러?*/}
++        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '20px' }}>
++          <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b', marginBottom: '16px' }}>
++            ?️ 3?계 ?이??보정 ?좌표 ?제 ?로?스 (Data Refinement Pipeline)
++          </div>
++          
++          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
++            {/* 1?계 */}
++            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
++              <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#eab308', marginBottom: '6px' }}>STEP 01. YOLO RAW 좌표 추출</div>
++              <div style={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid #e2e8f0', marginBottom: '8px' }}>
++                <img src="/artifacts/csv_yolo_raw.png" alt="YOLO Raw Data" style={{ width: '100%', height: 'auto', display: 'block' }} />
++              </div>
++              <span style={{ fontSize: '10px', color: '#64748b', lineHeight: '1.4', display: 'block' }}>
++                비디???의 ?곡??카메???크??? 좌표?x, y)???천 ?집???것???태?니?? ????이즈? 많습?다.
++              </span>
++            </div>
++
++            {/* 2?계 */}
++            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
++              <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#3b82f6', marginBottom: '6px' }}>STEP 02. ?모그래???영 보정</div>
++              <div style={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid #e2e8f0', marginBottom: '8px' }}>
++                <img src="/artifacts/csv_calibrated.png" alt="Homography Calibrated" style={{ width: '100%', height: 'auto', display: 'block' }} />
++              </div>
++              <span style={{ fontSize: '10px', color: '#64748b', lineHeight: '1.4', display: 'block' }}>
++                ?근 변???렬(Homography) ??산???해 ?선 구도??????2D 105m×68m 공식 축구??좌표 ?면?로 캘리브레?션???계?니??
++              </span>
++            </div>
++
++            {/* 3?계 */}
++            <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '12px' }}>
++              <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#10b981', marginBottom: '6px' }}>STEP 03. ?이??터?& ?제</div>
++              <div style={{ borderRadius: '4px', overflow: 'hidden', border: '1px solid #e2e8f0', marginBottom: '8px' }}>
++                <img src="/artifacts/csv_final.png" alt="Final Tactical Data" style={{ width: '100%', height: 'auto', display: 'block' }} />
++              </div>
++              <span style={{ fontSize: '10px', color: '#64748b', lineHeight: '1.4', display: 'block' }}>
++                ?동 ?균 ?터(Moving Average)? ?상??거 ?고리즘??추? ?용???비?인 ?차? ?탐지?차단??최종 ?술 분석 ?이?셋?니??
++              </span>
++            </div>
++          </div>
++        </div>
++      </div>
++    </div>
++  );
++}
++
++

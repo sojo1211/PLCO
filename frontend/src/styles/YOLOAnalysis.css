@@ -1,0 +1,643 @@
+.yolo-analysis {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.yolo-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+}
+
+.yolo-header h1 {
+  font-size: 2.5rem;
+  margin: 0 0 0.5rem 0;
+}
+
+.yolo-header p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  margin: 0;
+}
+
+.section {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.section h2 {
+  font-size: 1.8rem;
+  margin: 0 0 1.5rem 0;
+  color: #333;
+  border-bottom: 3px solid #667eea;
+  padding-bottom: 0.5rem;
+}
+
+/* 경기 정보 */
+.match-info {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 2rem;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.match-info .team {
+  text-align: center;
+  flex: 1;
+}
+
+.match-info .team h3 {
+  font-size: 1.5rem;
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.match-info .score {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #667eea;
+  margin: 0;
+}
+
+.match-info .divider {
+  margin: 0 2rem;
+  font-size: 1.5rem;
+  color: #999;
+}
+
+/* 비교 그리드 */
+.comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.comparison-card {
+  padding: 1.5rem;
+  background: #f9f9f9;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.comparison-card h3 {
+  margin: 0 0 1rem 0;
+  color: #667eea;
+  font-size: 1.1rem;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-row span:first-child {
+  font-weight: 600;
+  color: #333;
+}
+
+.stat-row span:last-child {
+  color: #666;
+}
+
+/* 검증 테이블 */
+.validation-table {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid #e0e0e0;
+}
+
+.validation-table h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.validation-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.validation-table th {
+  background: #667eea;
+  color: white;
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+}
+
+.validation-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.validation-table tr:hover {
+  background: #f5f5f5;
+}
+
+/* 추적 정보 */
+.tracking-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.tracking-card {
+  padding: 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.tracking-card h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+}
+
+.tracking-card .big-number {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin: 0;
+}
+
+.tracking-card .label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin: 0;
+}
+
+/* 기술 스택 */
+.tech-stack {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+.tech-badge {
+  background: #667eea;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* 데이터 파일 */
+.data-files {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.data-file-card {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: #f9f9f9;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.data-file-card:hover {
+  border-color: #667eea;
+  background: #f5f5ff;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+}
+
+.data-file-card .file-icon {
+  font-size: 2.5rem;
+  text-align: center;
+  min-width: 60px;
+}
+
+.data-file-card .file-info {
+  flex: 1;
+}
+
+.data-file-card h4 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.data-file-card .file-path {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: #666;
+  background: white;
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin: 0.5rem 0;
+  word-break: break-all;
+  border-left: 3px solid #667eea;
+  padding-left: 0.75rem;
+}
+
+.data-file-card .file-desc {
+  margin: 0.5rem 0 0 0;
+  color: #999;
+  font-size: 0.9rem;
+}
+
+.data-file-card .file-size {
+  margin: 0.5rem 0 0 0;
+  color: #667eea;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* 상태 그리드 */
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.5rem;
+}
+
+.status-item {
+  text-align: center;
+  padding: 1.5rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.status-item .status-badge {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.status-badge.ok {
+  background: #4caf50;
+  color: white;
+}
+
+.status-item p {
+  margin: 0;
+  color: #333;
+  font-weight: 600;
+}
+
+/* 로딩 상태 */
+.loading {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+/* 탭 네비게이션 */
+.analysis-tabs {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 0.5rem;
+}
+
+.tab-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background: transparent;
+  color: #666;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -0.5rem;
+}
+
+.tab-btn:hover {
+  color: #667eea;
+}
+
+.tab-btn.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+}
+
+/* 메트릭 박스 */
+.metric-box {
+  background: #f5f5f5;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border-left: 4px solid #667eea;
+}
+
+.metric-box p {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+}
+
+.metric-box strong {
+  color: #667eea;
+  font-size: 1.2rem;
+}
+
+/* 피치 SVG */
+.pitch-svg {
+  width: 100%;
+  max-width: 600px;
+  margin: 2rem auto;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 훈련 추천 */
+.recommendations {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 2px solid #667eea;
+  margin-top: 2rem;
+}
+
+.recommendations h3 {
+  margin: 0 0 1rem 0;
+  color: #667eea;
+  font-size: 1.3rem;
+}
+
+.rec-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  align-items: center;
+}
+
+.rec-item:last-child {
+  border-bottom: none;
+}
+
+.rec-zone {
+  background: #667eea;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 600;
+  min-width: 50px;
+  text-align: center;
+}
+
+.rec-text {
+  flex: 1;
+  color: #333;
+}
+
+/* 경기 헤더 */
+.match-header {
+  background: #f5f5f5;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.match-header p {
+  margin: 0.5rem 0;
+  color: #666;
+  font-weight: 600;
+}
+
+/* 수비 통계 */
+.defense-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.def-stat-card {
+  background: white;
+  border: 2px solid #e0e0e0;
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.def-stat-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.def-stat-card.danger {
+  border-color: #ff4444;
+  background: #fff5f5;
+}
+
+.def-stat-card .stat-label {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.def-stat-card .stat-value {
+  margin: 0.5rem 0 0 0;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #667eea;
+}
+
+.def-stat-card.danger .stat-value {
+  color: #ff4444;
+}
+
+/* 위험도 알림 */
+.danger-alert {
+  background: #ffe0e0;
+  border: 2px solid #ff4444;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.danger-alert p {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #cc0000;
+  font-weight: 600;
+}
+
+/* 위협 게이지 */
+.threat-gauge {
+  text-align: center;
+  padding: 2rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.threat-meter {
+  background: #e0e0e0;
+  height: 30px;
+  border-radius: 15px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+  width: 100%;
+}
+
+.threat-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #44aa44 0%, #ffaa00 50%, #ff4444 100%);
+  transition: width 0.5s ease;
+}
+
+.threat-value {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #667eea;
+  margin: 0.5rem 0;
+}
+
+.threat-assessment {
+  font-size: 1.1rem;
+  color: #666;
+  margin: 0;
+  font-weight: 600;
+}
+
+/* 통계 그리드 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+  text-align: center;
+}
+
+.stat-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+}
+
+.stat-label {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.stat-value {
+  margin: 0.5rem 0 0 0;
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #667eea;
+}
+
+/* 팀별 통계 */
+.team-stats {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  margin-top: 2rem;
+}
+
+.team-stats h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.team-stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.team-stat-row:last-child {
+  border-bottom: none;
+}
+
+.team-stat-row span:first-child {
+  font-weight: 600;
+  color: #333;
+}
+
+.team-stat-row span:last-child {
+  color: #666;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .yolo-analysis {
+    padding: 1rem;
+  }
+
+  .analysis-tabs {
+    flex-direction: column;
+  }
+
+  .tab-btn {
+    width: 100%;
+    text-align: left;
+  }
+
+  .comparison-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .match-info {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .match-info .divider {
+    margin: 0;
+  }
+
+  .section {
+    padding: 1rem;
+  }
+
+  .yolo-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .pitch-svg {
+    max-width: 100%;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
