@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: plco-api
+    runtime: python
+    # git lfs pull로 match_intelligence.db(377MB)를 Render 서버에 다운로드
+    buildCommand: "git lfs pull && pip install -r requirements.txt"
+    startCommand: "gunicorn api_server:app --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0

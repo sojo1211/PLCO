@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
+// 프로덕션 환경에서는 VITE_API_URL을 사용하고, 로컬에서는 localhost로 폴백
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 /* ── 포메이션 데이터 ── */
 const FORMATION_POSITIONS = {
   '4-3-3': [
@@ -220,11 +223,11 @@ export default function BacktestingPage() {
   useEffect(() => {
     setDataLoading(true)
     Promise.all([
-      axios.get('http://localhost:8000/api/backtest/summary'),
-      axios.get('http://localhost:8000/api/backtest/substitution'),
-      axios.get('http://localhost:8000/api/backtest/timeline'),
-      axios.get('http://localhost:8000/api/ml/players'),
-      axios.get('http://localhost:8000/api/ml/clusters'),
+      axios.get(`${apiUrl}/api/backtest/summary`),
+      axios.get(`${apiUrl}/api/backtest/substitution`),
+      axios.get(`${apiUrl}/api/backtest/timeline`),
+      axios.get(`${apiUrl}/api/ml/players`),
+      axios.get(`${apiUrl}/api/ml/clusters`),
     ]).then(([s, sub, tl, pl, cl]) => {
       setSummary(s.data)
       setSubstData(Object.entries(sub.data).map(([label, d]) => ({ label, ...d })))
@@ -235,11 +238,11 @@ export default function BacktestingPage() {
       setMlClusters(cl.data)
     }).finally(() => setDataLoading(false))
 
-    axios.get('http://localhost:8000/api/players/jersey-numbers')
+    axios.get(`${apiUrl}/api/players/jersey-numbers`)
       .then(r => setJerseyNumbers(r.data))
       .catch(() => {})
 
-    axios.get('http://localhost:8000/api/tactics/matchup')
+    axios.get(`${apiUrl}/api/tactics/matchup`)
       .then(r => setMatchupData(r.data))
       .catch(() => {})
   }, [])
@@ -247,7 +250,7 @@ export default function BacktestingPage() {
   // 전술 선택 + 선수 투입 → 통합 승률 계산
   useEffect(() => {
     if (!tacticSubPlayer) return
-    axios.get('http://localhost:8000/api/ml/simulate', {
+    axios.get(`${apiUrl}/api/ml/simulate`, {
       params: { player_in: tacticSubPlayer.player, minute: tacticMinute, score_state: 0 }
     }).then(r => setTacticSimResult(r.data)).catch(() => {})
   }, [tacticSubPlayer, tacticMinute])
@@ -256,7 +259,7 @@ export default function BacktestingPage() {
   useEffect(() => {
     if (teamFilter === '전체') { setRosterPlayers([]); return }
     setRosterLoading(true)
-    axios.get('http://localhost:8000/api/teams/roster', { params: { team: teamFilter } })
+    axios.get(`${apiUrl}/api/teams/roster`, { params: { team: teamFilter } })
       .then(r => {
         const roster = (r.data.players || []).map(p => ({
           player: p.name,
@@ -282,7 +285,7 @@ export default function BacktestingPage() {
   useEffect(() => {
     if (!selectedPlayer) return
     setSimLoading(true)
-    axios.get('http://localhost:8000/api/ml/simulate', {
+    axios.get(`${apiUrl}/api/ml/simulate`, {
       params: { player_in: selectedPlayer.player, minute, score_state: scoreState }
     }).then(r => setSimResult(r.data)).finally(() => setSimLoading(false))
   }, [selectedPlayer, minute, scoreState])

@@ -3,6 +3,9 @@ import HUDLayout from './HUDLayout';
 import HUDPanel from './HUDPanel';
 import TacticalPitch from './TacticalPitch';
 
+// 프로덕션 환경에서는 VITE_API_URL을 사용하고, 로컬에서는 localhost로 폴백
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 export default function YOLOAnalysis({ onBack }) {
   const [matchData, setMatchData] = useState(null);
   const [setpieceData, setSetpieceData] = useState(null);
@@ -18,10 +21,10 @@ export default function YOLOAnalysis({ onBack }) {
   async function fetchAllData() {
     try {
       const [matchRes, setpieceRes, defRes, heatmapRes] = await Promise.all([
-        fetch('http://localhost:8000/api/yolo/match/1'),
-        fetch('http://localhost:8000/api/yolo/match/1/setpiece'),
-        fetch('http://localhost:8000/api/yolo/match/1/defensive'),
-        fetch('http://localhost:8000/api/yolo/match/1/heatmap').catch(() => ({ json: () => [] })) // Safe fallback if heatmap fails
+        fetch(`${apiUrl}/api/yolo/match/1`),
+        fetch(`${apiUrl}/api/yolo/match/1/setpiece`),
+        fetch(`${apiUrl}/api/yolo/match/1/defensive`),
+        fetch(`${apiUrl}/api/yolo/match/1/heatmap`).catch(() => ({ json: () => [] }))
       ]);
 
       setMatchData(await matchRes.json());

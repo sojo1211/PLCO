@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
+// 프로덕션 환경에서는 VITE_API_URL을 사용하고, 로컬에서는 localhost로 폴백
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 const TEAM_LOGOS = {
   "서울": "https://www.kleague.com/assets/images/emblem/emblem_K09.png",
   "수원": "https://www.kleague.com/assets/images/emblem/emblem_K02.png",
@@ -51,7 +54,7 @@ export default function Standings({ season, league }) {
     setError(null)
 
     axios
-      .get(`http://localhost:8000/api/standings?year=${season}&league=${league}`)
+      .get(`${apiUrl}/api/standings?year=${season}&league=${league}`)
       .then(r => setStandings(r.data))
       .catch(err => setError(err.response?.data?.error || '순위 데이터 로드 실패'))
       .finally(() => setLoading(false))

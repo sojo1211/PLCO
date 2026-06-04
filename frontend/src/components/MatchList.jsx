@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+
+// 프로덕션 환경에서는 VITE_API_URL을 사용하고, 로컬에서는 localhost로 폴백
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 import Standings from './Standings'
 
 const TEAM_LOGOS = {
@@ -99,7 +102,7 @@ export default function MatchList({ onSelect }) {
     setLoading(true)
     setError(null)
     setMatches([])
-    axios.get(`http://localhost:8000/api/fixtures?year=${season}&league=${league}&limit=500`)
+    axios.get(`${apiUrl}/api/fixtures?year=${season}&league=${league}&limit=500`)
       .then(r => {
         if (r.data?.error) {
           setError(r.data.error)
