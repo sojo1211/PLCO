@@ -1171,8 +1171,8 @@ export default function YoloTacticalReport({ match, onBack }) {
           <div className="match-center-grid" style={{ display: 'grid', gap: '24px', alignItems: 'start' }}>
 
           {/* 비디오 재생 패널 */}
-          <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '16px', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '15px', fontWeight: '800', color: '#00D9A3' }}>📺 매치 공식 하이라이트</span>
             </div>
             {videoLoading ? (
@@ -1200,16 +1200,16 @@ export default function YoloTacticalReport({ match, onBack }) {
               ))}
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
-              <input placeholder="YouTube 주소 또는 ID 붙여넣기..." value={videoInput} onChange={e => setVideoInput(e.target.value)} style={{ flex: 1, padding: '8px 12px', background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: '#fff', fontSize: '12px' }} />
-              <button onClick={loadVideo} style={{ padding: '8px 16px', background: '#00D9A3', border: 'none', borderRadius: '6px', color: '#0f172a', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>재생</button>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '14px', flexWrap: 'wrap' }}>
+              <input placeholder="YouTube 주소 또는 ID..." value={videoInput} onChange={e => setVideoInput(e.target.value)} style={{ flex: 1, minWidth: '150px', padding: '8px 12px', background: '#1e293b', border: '1px solid #334155', borderRadius: '6px', color: '#fff', fontSize: '12px' }} />
+              <button onClick={loadVideo} style={{ padding: '8px 16px', background: '#00D9A3', border: 'none', borderRadius: '6px', color: '#0f172a', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap' }}>재생</button>
             </div>
           </div>
         </div>
 
           {/* 서브 분석 데이터 탭 패널 */}
-          <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '20px' }}>
-            <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid #1e293b', paddingBottom: '10px', marginBottom: '14px', overflowX: 'auto' }}>
+          <div style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', padding: '16px', overflow: 'hidden', width: '100%' }}>
+            <div className="tab-scroll-container" style={{ display: 'flex', gap: '8px', borderBottom: '1px solid #1e293b', paddingBottom: '10px', marginBottom: '14px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%' }}>
               {[
                 { key: 'timeline', label: '📜 AI중계' },
                 { key: 'stats', label: '📊 지표' },
@@ -1318,16 +1318,18 @@ export default function YoloTacticalReport({ match, onBack }) {
                           <div key={`ev-${idx}`} style={{ display: 'grid', gridTemplateColumns: '1fr 40px 1fr', alignItems: 'center', width: '100%', position: 'relative', zIndex: 2 }}>
                             {/* 좌측 영역 (홈팀 - Home) */}
                             {item.side === 'left' ? (
-                              <div style={{ paddingRight: '8px' }}>
+                              <div style={{ paddingRight: '8px', minWidth: 0 }}>
                                 <div style={{
                                   padding: '8px 12px',
                                   background: '#1e293b',
                                   borderRadius: '8px',
                                   borderLeft: `4px solid ${eventColor}`,
                                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                  textAlign: 'left'
+                                  textAlign: 'left',
+                                  wordBreak: 'keep-all',
+                                  overflowWrap: 'break-word'
                                 }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: 'bold', marginBottom: '4px' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: 'bold', marginBottom: '4px', flexWrap: 'wrap', gap: '4px' }}>
                                     <span style={{ color: '#00D9A3' }}>{item.minute}' 분</span>
                                     <span style={{ color: '#94a3b8' }}>{item.team_name}</span>
                                   </div>
@@ -1351,16 +1353,18 @@ export default function YoloTacticalReport({ match, onBack }) {
 
                             {/* 우측 영역 (원정팀 - Away) */}
                             {item.side === 'right' ? (
-                              <div style={{ paddingLeft: '8px' }}>
+                              <div style={{ paddingLeft: '8px', minWidth: 0 }}>
                                 <div style={{
                                   padding: '8px 12px',
                                   background: '#1e293b',
                                   borderRadius: '8px',
                                   borderLeft: `4px solid ${eventColor}`,
                                   boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                                  textAlign: 'left'
+                                  textAlign: 'left',
+                                  wordBreak: 'keep-all',
+                                  overflowWrap: 'break-word'
                                 }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: 'bold', marginBottom: '4px' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: 'bold', marginBottom: '4px', flexWrap: 'wrap', gap: '4px' }}>
                                     <span style={{ color: '#00D9A3' }}>{item.minute}' 분</span>
                                     <span style={{ color: '#94a3b8' }}>{item.team_name}</span>
                                   </div>
@@ -1399,7 +1403,7 @@ export default function YoloTacticalReport({ match, onBack }) {
 
             {/* 선수 명단 및 교체 정보 탭 */}
             {activeTab === 'player' && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', maxHeight: '500px', overflowY: 'auto', paddingRight: '4px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100%, 1fr))', gap: '20px', maxHeight: '500px', overflowY: 'auto', paddingRight: '4px' }}>
                 {[
                   { name: match?.home_team, logo: match?.home_logo, color: '#4a9be8', players: lineups.filter(l => l.team_name === match?.home_team && l.player_name) },
                   { name: match?.away_team, logo: match?.away_logo, color: '#e85c5c', players: lineups.filter(l => l.team_name === match?.away_team && l.player_name) }
