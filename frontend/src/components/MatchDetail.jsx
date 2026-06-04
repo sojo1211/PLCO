@@ -827,6 +827,7 @@ function AnalysisCards({ currentData, selectedOut, selectedIn, perspective, setP
 }
 
 function YoloProcessSection() {
+  const base = import.meta.env.BASE_URL || '/'
   return (
     <div style={{ marginTop: '36px', borderTop: '2px solid #1e293b', paddingTop: '28px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
@@ -836,8 +837,8 @@ function YoloProcessSection() {
       <p style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.6', margin: '0 0 20px 0' }}>기존 1차 트래킹 데이터로만 파악이 불가했던 <strong style={{ color: '#94a3b8' }}>"교체 직후 아군 점유 공간 변화"</strong>를 YOLOv11 영상 분석 파이프라인을 구축해 22명 선수 위치 일치 데이터를 트래킹·정량화하여 전술 변화를 규명했습니다.</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '24px' }}>
         {[
-          { dot: '#ef4444', title: '실시간 객체 트래킹 HUD 및 전술 시각화', src: '/artifacts/tactical_analysis_dashboard.png', alt: 'YOLO HUD Dashboard', desc: 'YOLOv11 모델로 프레임당 22명의 선수 위치, 심판, 축구공의 바운딩 박스를 검출하고, 전용 HUD 가이드 라인을 캔버스 오버레이로 출력한 결과입니다.' },
-          { dot: '#3b82f6', title: '호모그래피 평면 투영 히트맵', src: '/artifacts/tactical_heatmap.png', alt: 'Homography Heatmap', desc: 'Homography Matrix를 이용해 2차원 Top-down 뷰에 맞게 좌표를 보정한 결과입니다.' },
+          { dot: '#ef4444', title: '실시간 객체 트래킹 HUD 및 전술 시각화', src: base + 'artifacts/tactical_analysis_dashboard.png', alt: 'YOLO HUD Dashboard', desc: 'YOLOv11 모델로 프레임당 22명의 선수 위치, 심판, 축구공의 바운딩 박스를 검출하고, 전용 HUD 가이드 라인을 캔버스 오버레이로 출력한 결과입니다.' },
+          { dot: '#3b82f6', title: '호모그래피 평면 투영 히트맵', src: base + 'artifacts/tactical_heatmap.png', alt: 'Homography Heatmap', desc: 'Homography Matrix를 이용해 2차원 Top-down 뷰에 맞게 좌표를 보정한 결과입니다.' },
         ].map(c => (
           <div key={c.title} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '16px' }}>
             <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#e2e8f0', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', background: c.dot, display: 'inline-block', flexShrink: 0 }} />{c.title}</div>
@@ -850,9 +851,9 @@ function YoloProcessSection() {
         <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#e2e8f0', marginBottom: '16px' }}>🛠️ 3단계 데이터 보정 실좌표 정제 프로세스 (Data Refinement Pipeline)</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
           {[
-            { color: '#eab308', step: 'STEP 01. YOLO RAW 좌표 추출', src: '/artifacts/csv_yolo_raw.png', alt: 'YOLO Raw', desc: '비디오 프레임 내 왜곡된 카메라 스크린상의 2D 좌표(x, y)를 원천 수집한 상태로, 원근 왜곡과 노이즈가 많습니다.' },
-            { color: '#3b82f6', step: 'STEP 02. 호모그래피 평면 투영 보정', src: '/artifacts/csv_calibrated.png', alt: 'Calibrated', desc: '원근 변환 행렬(Homography Matrix) 역산 연산을 통해 실제 105m × 68m 공식 축구장 좌표 평면으로 캘리브레이션을 진행한 단계입니다.' },
-            { color: '#10b981', step: 'STEP 03. 이동 평균 필터링 & 노이즈 정제', src: '/artifacts/csv_final.png', alt: 'Final', desc: '이동 평균 필터(Moving Average Filter)를 적용해 프레임 간 좌표 노이즈를 제거하고, 선수별 추적 ID를 안정화하여 클린 데이터를 산출합니다.' },
+            { color: '#eab308', step: 'STEP 01. YOLO RAW 좌표 추출', src: base + 'artifacts/csv_yolo_raw.png', alt: 'YOLO Raw', desc: '비디오 프레임 내 왜곡된 카메라 스크린상의 2D 좌표(x, y)를 원천 수집한 상태로, 원근 왜곡과 노이즈가 많습니다.' },
+            { color: '#3b82f6', step: 'STEP 02. 호모그래피 평면 투영 보정', src: base + 'artifacts/csv_calibrated.png', alt: 'Calibrated', desc: '원근 변환 행렬(Homography Matrix) 역산 연산을 통해 실제 105m × 68m 공식 축구장 좌표 평면으로 캘리브레이션을 진행한 단계입니다.' },
+            { color: '#10b981', step: 'STEP 03. 이동 평균 필터링 & 노이즈 정제', src: base + 'artifacts/csv_final.png', alt: 'Final', desc: '이동 평균 필터(Moving Average Filter)를 적용해 프레임 간 좌표 노이즈를 제거하고, 선수별 추적 ID를 안정화하여 클린 데이터를 산출합니다.' },
           ].map(s => (
             <div key={s.step} style={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px', padding: '12px' }}>
               <div style={{ fontSize: '11px', fontWeight: 'bold', color: s.color, marginBottom: '8px' }}>{s.step}</div>
@@ -999,7 +1000,7 @@ export default function YoloTacticalReport({ match, onBack }) {
   const [activeTab, setActiveTab] = useState('timeline')
   const [hoveredPlayer, setHoveredPlayer] = useState(null)
 
-  const apiUrl = typeof import.meta !== 'undefined' ? import.meta.env?.VITE_API_URL ?? '' : ''
+  const apiUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || 'http://localhost:8000'
   const fid = match?.fixture_id
 
   // 2번 파일의 데이터 Fetch 파이프라인 통합
