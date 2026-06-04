@@ -7,8 +7,8 @@ export default defineConfig({
     port: 5174,
     strictPort: true,
   },
-  // Vercel 배포 시 정적 파일 위치 지정
-  base: '/',
+  // GitHub Pages 배포 시 저장소 이름과 동일한 경로 설정 필수
+  base: '/PLCO/',
   build: {
     outDir: 'dist',
     emptyOutDir: true,
