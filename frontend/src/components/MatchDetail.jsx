@@ -1576,18 +1576,18 @@ export default function YoloTacticalReport({ match, onBack }) {
                   const barColor = v.accuracy >= 75 ? '#00D9A3' : v.accuracy >= 50 ? '#f59e0b' : '#ef4444'
                   return (
                     <div key={idx} style={{ background: '#1e293b', padding: '12px', borderRadius: '8px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
                         <span>{v.label}</span>
                         <span style={{ color: barColor }}>정확도 일치율: {v.accuracy.toFixed(1)}%</span>
                       </div>
                       <div style={{ height: '6px', background: '#0f172a', borderRadius: '3px', overflow: 'hidden', marginBottom: '8px' }}>
                         <div style={{ width: `${v.accuracy}%`, height: '100%', background: barColor, transition: 'width 0.6s ease' }} />
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748b', marginBottom: '6px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748b', marginBottom: '6px', flexWrap: 'wrap', gap: '4px' }}>
                         <span>공식 피드: {v.sofascore.toFixed(1)}</span>
                         <span>YOLO 트래킹 추출: {v.yolo.toFixed(1)}</span>
                       </div>
-                      <div style={{ background: '#0f172a', borderRadius: '6px', padding: '6px 10px', fontSize: '10px', color: '#475569', fontFamily: 'monospace' }}>
+                      <div style={{ background: '#0f172a', borderRadius: '6px', padding: '8px 10px', fontSize: '10px', color: '#475569', fontFamily: 'monospace', wordBreak: 'keep-all', overflowWrap: 'break-word', lineHeight: '1.6' }}>
                         <span style={{ color: '#334155' }}>📐 계산식: </span>
                         <span style={{ color: '#60a5fa' }}>{v.sofascore.toFixed(1)}</span>
                         <span style={{ color: '#475569' }}> (공식) ÷ </span>
