@@ -1071,27 +1071,27 @@ export default function YoloTacticalReport({ match, onBack }) {
       )}
 
       {/* ── 상단 방송 스타일 스코어보드 배너 (2번 이식) ── */}
-      <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', border: '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '40px', marginBottom: '24px', position: 'relative' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', width: '200px' }}>
+      <div className="scoreboard-banner" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', border: '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
+        <div className="sb-goals sb-home" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flex: 1, minWidth: '100px' }}>
           {[...homeGoals].reverse().map((g, i) => (
             <div key={i} style={{ fontSize: '11px', color: '#94a3b8' }}>⚽ {g.player_name?.split(' ').slice(-1)[0]} ({g.minute}')</div>
           ))}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <TeamLogo src={match?.home_logo} alt={match?.home_team} size={40} />
-          <span style={{ fontSize: '18px', fontWeight: '800' }}>{match?.home_team}</span>
+        <div className="sb-team" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <TeamLogo src={match?.home_logo} alt={match?.home_team} size={36} />
+          <span style={{ fontSize: '16px', fontWeight: '800' }}>{match?.home_team}</span>
         </div>
-        <div style={{ textAlignment: 'center' }}>
-          <div style={{ fontSize: '36px', fontWeight: '900', color: '#00D9A3', letterSpacing: '4px' }}>
-            {match?.home_score ?? 0} <span style={{ color: '#334155' }}>:</span> {match?.away_score ?? 0}
+        <div className="sb-score" style={{ textAlign: 'center', minWidth: '100px', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: '36px', fontWeight: '900', color: '#00D9A3', letterSpacing: '2px' }}>
+            {match?.home_score ?? 0} <span style={{ color: '#334155', margin: '0 4px' }}>:</span> {match?.away_score ?? 0}
           </div>
-          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>{match?.date} · {match?.status === 'Live' ? 'LIVE' : '경기 종료'}</div>
+          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>{match?.date} · {match?.status === 'Live' ? 'LIVE' : '종료'}</div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontSize: '18px', fontWeight: '800' }}>{match?.away_team}</span>
-          <TeamLogo src={match?.away_logo} alt={match?.away_team} size={40} />
+        <div className="sb-team" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '16px', fontWeight: '800' }}>{match?.away_team}</span>
+          <TeamLogo src={match?.away_logo} alt={match?.away_team} size={36} />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', width: '200px' }}>
+        <div className="sb-goals sb-away" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', flex: 1, minWidth: '100px' }}>
           {[...awayGoals].reverse().map((g, i) => (
             <div key={i} style={{ fontSize: '11px', color: '#94a3b8' }}>{g.player_name?.split(' ').slice(-1)[0]} ({g.minute}') ⚽</div>
           ))}
