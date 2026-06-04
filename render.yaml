@@ -2,8 +2,7 @@ services:
   - type: web
     name: plco-api
     runtime: python
-    # git-lfs 설치 후 DB 다운로드, 의존성 설치
-    buildCommand: "apt-get install -y git-lfs; git lfs install; git lfs pull; pip install -r requirements.txt"
+    buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn api_server:app --bind 0.0.0.0:$PORT"
     envVars:
       - key: PYTHON_VERSION
