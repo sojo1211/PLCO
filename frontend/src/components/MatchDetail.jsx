@@ -837,13 +837,15 @@ function YoloProcessSection() {
       <p style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.6', margin: '0 0 20px 0' }}>기존 1차 트래킹 데이터로만 파악이 불가했던 <strong style={{ color: '#94a3b8' }}>"교체 직후 아군 점유 공간 변화"</strong>를 YOLOv11 영상 분석 파이프라인을 구축해 22명 선수 위치 일치 데이터를 트래킹·정량화하여 전술 변화를 규명했습니다.</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '24px' }}>
         {[
-          { dot: '#ef4444', title: '실시간 객체 트래킹 HUD 및 전술 시각화', src: base + 'artifacts/tactical_analysis_dashboard.png', alt: 'YOLO HUD Dashboard', desc: 'YOLOv11 모델로 프레임당 22명의 선수 위치, 심판, 축구공의 바운딩 박스를 검출하고, 전용 HUD 가이드 라인을 캔버스 오버레이로 출력한 결과입니다.' },
-          { dot: '#3b82f6', title: '호모그래피 평면 투영 히트맵', src: base + 'artifacts/tactical_heatmap.png', alt: 'Homography Heatmap', desc: 'Homography Matrix를 이용해 2차원 Top-down 뷰에 맞게 좌표를 보정한 결과입니다.' },
+          { dot: '#00D9A3', title: '1. 공간 창출 지수 시각화', src: base + 'artifacts/tactical_space.png', alt: 'Space Creation', desc: 'Matplotlib Pitch Control: 22명 선수의 좌표 데이터를 통해 중원 점유율 및 좌우 측면 빌드업 공간을 계산한 커널 밀도(KDE) 데이터 시각화입니다. (카드 01 연동)' },
+          { dot: '#ef4444', title: '2. 역습 전개 및 속도 추적', src: base + 'artifacts/tactical_counter.png', alt: 'Counter Attack', desc: 'Matplotlib Quiver Plot: 이동 평균 필터를 통과한 좌표 벡터를 추출해, 수비 전환 시점의 역습 스프린트 방향과 속도를 분석한 벡터 그래프입니다. (카드 02 연동)' },
+          { dot: '#3b82f6', title: '3. 세트피스 위험 구역 분석', src: base + 'artifacts/tactical_setpiece.png', alt: 'Set Piece', desc: 'Seaborn Density Heatmap: 코너킥 상황 시 페널티 박스 안의 수비 밀집도(Red Zone)와 맨투맨 커버 범위를 등고선으로 도출한 분석 차트입니다. (카드 03 연동)' },
+          { dot: '#8b5cf6', title: '4. 포메이션 전술 상성 매칭', src: base + 'artifacts/tactical_matchup.png', alt: 'Tactical Matchup', desc: 'Matplotlib Radar Chart: 양 팀의 6대 전술 지표(빌드업, 압박, 전환, 피니시 등) 강점과 약점을 다각도로 비교 분석한 전술 상성 매칭 차트입니다. (카드 04 연동)' },
         ].map(c => (
           <div key={c.title} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '16px' }}>
             <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#e2e8f0', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: '8px', height: '8px', borderRadius: '50%', background: c.dot, display: 'inline-block', flexShrink: 0 }} />{c.title}</div>
-            <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', border: '1px solid #334155', marginBottom: '10px' }}><img src={c.src} alt={c.alt} style={{ width: '100%', height: 'auto', display: 'block' }} /></div>
-            <p style={{ fontSize: '11px', color: '#64748b', lineHeight: '1.4', margin: 0 }}><strong style={{ color: '#94a3b8' }}>기술 상세:</strong> {c.desc}</p>
+            <div style={{ background: '#fff', borderRadius: '8px', overflow: 'hidden', border: '1px solid #334155', marginBottom: '10px', aspectRatio: '16/9' }}><img src={c.src} alt={c.alt} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} /></div>
+            <p style={{ fontSize: '11px', color: '#64748b', lineHeight: '1.4', margin: 0 }}><strong style={{ color: '#94a3b8' }}>데이터 분석:</strong> {c.desc}</p>
           </div>
         ))}
       </div>
